@@ -23,20 +23,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      # actions/checkout refuses any path outside the workspace, so the two
+      # sibling repos live inside it and every consumer is pointed at them
+      # explicitly (build-core.sh and generate-bindings.sh both read
+      # LNURLCASH_CORE; the test task reads LNURLCASH_CONFORMANCE).
       - uses: actions/checkout@v4
         with:
           repository: TheCryptoDonkey/lnurlcash-core
-          path: ../lnurlcash-core
+          path: core
       - uses: actions/checkout@v4
         with:
           repository: TheCryptoDonkey/lnurlcash-conformance
-          path: ../lnurlcash-conformance
+          path: conformance
       - name: build the native core
         run: ./scripts/build-core.sh
+        env:
+          LNURLCASH_CORE: ${{ github.workspace }}/core
       # the bindings are checked in, so a hand edit must fail the build rather
       # than quietly become the truth
       - name: bindings are unmodified
         run: |
           ./scripts/generate-bindings.sh
           git diff --exit-code bindings/
-      - run: gradle build
+        env:
+          LNURLCASH_CORE: ${{ github.workspace }}/core
+      - run: gradle build "-Djna.library.path=${{ github.workspace }}/core/target/release"
+        env:
+          LNURLCASH_CONFORMANCE: ${{ github.workspace }}/conformance
