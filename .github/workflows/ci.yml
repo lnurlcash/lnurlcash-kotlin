@@ -35,6 +35,10 @@ jobs:
         with:
           repository: TheCryptoDonkey/lnurlcash-conformance
           path: conformance
+      # the mock mint is a Node process with its own dependencies - without
+      # these the adversarial suite cannot start it
+      - run: npm ci
+        working-directory: conformance
       - name: build the native core
         run: ./scripts/build-core.sh
         env:
