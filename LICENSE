@@ -1,6 +1,12 @@
 MIT License
 
+Copyright (c) 2026 dni
 Copyright (c) 2026 TheCryptoDonkey
+
+This library binds lnurlcash-core, whose protocol layer follows lnurl-wallet
+(https://github.com/dni/lnurl-wallet), the LNURLcash reference wallet, which is
+MIT licensed and authored by dni; parts of its documentation are derived from
+that source. Subsequent changes are TheCryptoDonkey's.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
