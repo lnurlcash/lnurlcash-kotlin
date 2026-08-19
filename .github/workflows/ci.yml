@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # the mock mint is a Node process from the conformance repo
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/checkout@v4
+        with:
+          repository: TheCryptoDonkey/lnurlcash-core
+          path: ../lnurlcash-core
+      - uses: actions/checkout@v4
+        with:
+          repository: TheCryptoDonkey/lnurlcash-conformance
+          path: ../lnurlcash-conformance
+      - name: build the native core
+        run: ./scripts/build-core.sh
+      # the bindings are checked in, so a hand edit must fail the build rather
+      # than quietly become the truth
+      - name: bindings are unmodified
+        run: |
+          ./scripts/generate-bindings.sh
+          git diff --exit-code bindings/
+      - run: gradle build

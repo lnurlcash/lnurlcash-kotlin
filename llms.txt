@@ -1,0 +1,66 @@
+# lnurlcash-kotlin
+
+LNURLcash (LUD-25) bearer notes for Kotlin and the JVM, over the Rust core
+lnurlcash-core via UniFFI. MIT.
+
+implementation("io.github.thecryptodonkey:lnurlcash-kotlin:0.1.0")
+
+## CRITICAL: HTTP retries
+
+Every LNURLcash mutation (rotate/split/merge/melt) is an HTTP GET, but is NOT
+idempotent - the first attempt burns the input note. A client that retries a
+GET on connection failure will get "already spent" for the second attempt and
+report a DEFINITIVE rejection, so the caller discards the fresh secret that was
+the only copy of the note the service just minted.
+
+java.net.http.HttpClient does this and cannot be configured out of it. This
+library uses OkHttp with retryOnConnectionFailure(false). A caller-supplied
+client MUST disable retries.
+
+## API
+
+val client = LnurlcashClient(timeout, http, offline, secretSource)
+
+suspend fetchNoteInfo(url): NoteInfo               // maxWithdrawableMsat is authoritative
+suspend rotate(callback, k1): MutationOutcome<RotatedNote>
+suspend split(callback, k1s, amountMsat): MutationOutcome<SplitNotes>
+suspend merge(callback, k1s): MutationOutcome<RotatedNote>
+suspend melt(callback, k1, invoice): MutationOutcome<MeltReceipt>
+suspend settleNote(baseUrl, k1, expectedAmountMsat, signature): SettledNote
+suspend probeBurnedNote(url): NoteFate             // LIVE | GONE | UNKNOWN
+suspend fetchPayRequest / requestInvoice / fetchInvoiceStatus / fetchMintAddress
+
+Top-level pure functions: verifyNoteSignature, generateNoteSecret, hashK1,
+isPreimage, resolveNoteInput, resolveMintInput, resolveLnurlInput,
+isAllowedServiceUrl, buildNoteUrl, withNewK1, withoutK1, noteK1,
+noteDeclaredAmountMsat, noteSignature, parseMintFee, applyMintFee,
+grossUpForMintFee, describeMintFee, decodeBolt11AmountMsat, isBolt11Invoice,
+sameInvoice.
+
+Amounts are Long milli-satoshis everywhere (the bindings' ULong is converted).
+
+## MutationOutcome
+
+Mutations RETURN this; they do not throw. The dangerous case is not an error,
+it is an unknown.
+
+MutationOutcome.Confirmed(value)                    the service confirmed it
+MutationOutcome.Rejected(error)                     definitive: it did not happen
+MutationOutcome.Unknown(newSecrets, message, cause) MAYBE - persist newSecrets
+                                                    FIRST, then probeBurnedNote
+
+getOrThrow() collapses Unknown into an exception and loses the secrets. Only
+use it where losing the note would not matter.
+
+## Rules
+
+1. maxWithdrawableMsat is the ONLY authoritative value; a note URL's amount is a claim.
+2. The wallet generates replacement secrets; never accept a service-supplied k1.
+3. On Unknown: save newSecrets, then probeBurnedNote.
+4. A melt's Confirmed means IN FLIGHT. NotePending means retry, not spent.
+5. Rotate immediately after claiming a minted note.
+6. Never log note URLs - the secret is in the query string.
+
+## Conformance
+
+https://github.com/TheCryptoDonkey/lnurlcash-conformance
