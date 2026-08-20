@@ -201,6 +201,16 @@ class ProtocolTest {
         assertEquals(mint.pubkey, address.nodePubkey)
     }
 
+    @Test
+    fun `reads the node stats a mint address advertises`() = withMint { mint, client ->
+        val address = client.fetchMintAddress("${mint.url}/.well-known/lnurlw/mint")
+        // the wire field is nodeCapacity - renamed here, so it only arrives if
+        // it is mapped rather than read under its own name
+        assertEquals(500_000_000L, address.nodeCapacityMsat)
+        assertEquals(4L, address.nodeNumChannels)
+        assertEquals(6L, address.nodeNumPeers)
+    }
+
     // ---- ambiguous outcomes ----
 
     @Test

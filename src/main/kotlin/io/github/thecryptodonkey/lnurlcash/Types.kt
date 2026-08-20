@@ -98,6 +98,13 @@ public data class MintAddress(
     public val nodeAlias: String?,
     public val nodeUri: String?,
     public val nodeColor: String?,
+    /**
+     * The wire field is `nodeCapacity`, msat like every other amount here.
+     * Suffixed on this side so a caller cannot read it as sats.
+     */
+    public val nodeCapacityMsat: Long?,
+    public val nodeNumChannels: Long?,
+    public val nodeNumPeers: Long?,
 )
 
 /** What a probe learned about a note whose fate was uncertain. */

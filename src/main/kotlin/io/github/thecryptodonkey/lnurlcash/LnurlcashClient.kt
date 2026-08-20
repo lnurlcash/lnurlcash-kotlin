@@ -278,6 +278,9 @@ public class LnurlcashClient(
             nodeAlias = info.nodeAlias,
             nodeUri = info.nodeUri,
             nodeColor = info.nodeColor,
+            nodeCapacityMsat = info.nodeCapacityMsat?.toLong(),
+            nodeNumChannels = info.nodeNumChannels?.toLong(),
+            nodeNumPeers = info.nodeNumPeers?.toLong(),
         )
     }
 

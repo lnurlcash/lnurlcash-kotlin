@@ -13,6 +13,13 @@ and the adversarial mock mint.
 
 ### Design notes
 
+**The mint address carries the node stats under their wire names.** lnurl-mint
+advertises `nodeCapacity` in msat, so `nodeCapacityMsat` is a rename and is
+mapped explicitly — the TypeScript sibling shipped that rename unmapped and
+read null for every mint.
+
+
+
 **Mutations return `MutationOutcome`, they do not throw.** The dangerous case
 is not an error but an *unknown*, and a `catch` block invites treating "the
 answer was lost" as "it did not happen". `MutationOutcome.Unknown` carries the

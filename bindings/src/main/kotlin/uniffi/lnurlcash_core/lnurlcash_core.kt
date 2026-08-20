@@ -1393,7 +1393,10 @@ data class FfiMintAddress (
     var `nodePubkey`: kotlin.String?, 
     var `nodeAlias`: kotlin.String?, 
     var `nodeUri`: kotlin.String?, 
-    var `nodeColor`: kotlin.String?
+    var `nodeColor`: kotlin.String?, 
+    var `nodeCapacityMsat`: kotlin.ULong?, 
+    var `nodeNumChannels`: kotlin.ULong?, 
+    var `nodeNumPeers`: kotlin.ULong?
 ) {
     
     companion object
@@ -1413,6 +1416,9 @@ public object FfiConverterTypeFfiMintAddress: FfiConverterRustBuffer<FfiMintAddr
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalULong.read(buf),
         )
     }
 
@@ -1424,7 +1430,10 @@ public object FfiConverterTypeFfiMintAddress: FfiConverterRustBuffer<FfiMintAddr
             FfiConverterOptionalString.allocationSize(value.`nodePubkey`) +
             FfiConverterOptionalString.allocationSize(value.`nodeAlias`) +
             FfiConverterOptionalString.allocationSize(value.`nodeUri`) +
-            FfiConverterOptionalString.allocationSize(value.`nodeColor`)
+            FfiConverterOptionalString.allocationSize(value.`nodeColor`) +
+            FfiConverterOptionalULong.allocationSize(value.`nodeCapacityMsat`) +
+            FfiConverterOptionalULong.allocationSize(value.`nodeNumChannels`) +
+            FfiConverterOptionalULong.allocationSize(value.`nodeNumPeers`)
     )
 
     override fun write(value: FfiMintAddress, buf: ByteBuffer) {
@@ -1436,6 +1445,9 @@ public object FfiConverterTypeFfiMintAddress: FfiConverterRustBuffer<FfiMintAddr
             FfiConverterOptionalString.write(value.`nodeAlias`, buf)
             FfiConverterOptionalString.write(value.`nodeUri`, buf)
             FfiConverterOptionalString.write(value.`nodeColor`, buf)
+            FfiConverterOptionalULong.write(value.`nodeCapacityMsat`, buf)
+            FfiConverterOptionalULong.write(value.`nodeNumChannels`, buf)
+            FfiConverterOptionalULong.write(value.`nodeNumPeers`, buf)
     }
 }
 
