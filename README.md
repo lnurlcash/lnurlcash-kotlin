@@ -134,6 +134,9 @@ acceptable, and the public API here would not change.
 Both by dni, both MIT: [lnurl-mint](https://github.com/dni/lnurl-mint) and
 [lnurl-wallet](https://github.com/dni/lnurl-wallet).
 
+The wider ecosystem — wallets, mints, hardware and the sibling ports — is
+indexed in [awesome-lnurlcash](https://github.com/TheCryptoDonkey/awesome-lnurlcash).
+
 ## License
 
 MIT.
