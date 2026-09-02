@@ -787,6 +787,10 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -833,6 +837,10 @@ internal interface UniffiLib : Library {
     fun uniffi_lnurlcash_core_fn_func_mint_address_request(`url`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_mint_address_url(`payUrl`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_mint_invoice_request(`payCallback`: RustBuffer.ByValue,`amountMsat`: Long,`mintSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_mint_invoice_request_with_hash(`payCallback`: RustBuffer.ByValue,`amountMsat`: Long,`h`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_note_declared_amount(`url`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1022,6 +1030,10 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_mint_address_url(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_mint_invoice_request(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_mint_invoice_request_with_hash(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_note_declared_amount(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_note_info_request(
@@ -1107,7 +1119,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_hash_k1() != 33364.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_invoice_request() != 29224.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_invoice_request() != 4241.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_is_allowed_service_url() != 28400.toShort()) {
@@ -1129,6 +1141,12 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_mint_address_url() != 35396.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_mint_invoice_request() != 17194.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_mint_invoice_request_with_hash() != 38362.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_note_declared_amount() != 10356.toShort()) {
@@ -1532,7 +1550,20 @@ data class FfiPayRequest (
     var `metadata`: kotlin.String, 
     var `withdrawLink`: kotlin.String?, 
     var `mintPubkey`: kotlin.String?, 
-    var `mintFee`: FfiMintFee?
+    var `mintFee`: FfiMintFee?, 
+    /**
+     * LUD-12's field, and LUD-25's minting capability: a mint must allow the
+     * 64 characters the output commitment needs.
+     */
+    var `commentAllowed`: kotlin.ULong?, 
+    /**
+     * Additive ForgeSworn extension, never a substitute for the comment.
+     */
+    var `mintToHash`: kotlin.Boolean, 
+    /**
+     * Whether this SERVICE can mint a current-draft note at all.
+     */
+    var `namesMintOutput`: kotlin.Boolean
 ) {
     
     companion object
@@ -1551,6 +1582,9 @@ public object FfiConverterTypeFfiPayRequest: FfiConverterRustBuffer<FfiPayReques
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalTypeFfiMintFee.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -1561,7 +1595,10 @@ public object FfiConverterTypeFfiPayRequest: FfiConverterRustBuffer<FfiPayReques
             FfiConverterString.allocationSize(value.`metadata`) +
             FfiConverterOptionalString.allocationSize(value.`withdrawLink`) +
             FfiConverterOptionalString.allocationSize(value.`mintPubkey`) +
-            FfiConverterOptionalTypeFfiMintFee.allocationSize(value.`mintFee`)
+            FfiConverterOptionalTypeFfiMintFee.allocationSize(value.`mintFee`) +
+            FfiConverterOptionalULong.allocationSize(value.`commentAllowed`) +
+            FfiConverterBoolean.allocationSize(value.`mintToHash`) +
+            FfiConverterBoolean.allocationSize(value.`namesMintOutput`)
     )
 
     override fun write(value: FfiPayRequest, buf: ByteBuffer) {
@@ -1572,6 +1609,9 @@ public object FfiConverterTypeFfiPayRequest: FfiConverterRustBuffer<FfiPayReques
             FfiConverterOptionalString.write(value.`withdrawLink`, buf)
             FfiConverterOptionalString.write(value.`mintPubkey`, buf)
             FfiConverterOptionalTypeFfiMintFee.write(value.`mintFee`, buf)
+            FfiConverterOptionalULong.write(value.`commentAllowed`, buf)
+            FfiConverterBoolean.write(value.`mintToHash`, buf)
+            FfiConverterBoolean.write(value.`namesMintOutput`, buf)
     }
 }
 
@@ -1620,7 +1660,9 @@ public object FfiConverterTypeFfiRequest: FfiConverterRustBuffer<FfiRequest> {
 data class FfiVerify (
     var `settled`: kotlin.Boolean, 
     /**
-     * For LNURLcash this preimage IS the bearer note's secret. Rotate at once.
+     * Settlement proof, not the note. Current LUD-25 binds a note to a
+     * wallet-chosen secret named in the mint comment, so a preimage here
+     * redeems nothing.
      */
     var `preimage`: kotlin.String?, 
     var `pr`: kotlin.String
@@ -2124,6 +2166,9 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     }
     
 
+        /**
+         * A plain LUD-06 invoice request. Mints nothing - it names no output.
+         */
     @Throws(LnurlcashException::class) fun `invoiceRequest`(`payCallback`: kotlin.String, `amountMsat`: kotlin.ULong): FfiRequest {
             return FfiConverterTypeFfiRequest.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
@@ -2195,6 +2240,34 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_mint_address_url(
         FfiConverterString.lower(`payUrl`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The same, from the secret itself. It comes back on the request's
+         * `new_secrets`: persist it BEFORE paying the invoice.
+         */
+    @Throws(LnurlcashException::class) fun `mintInvoiceRequest`(`payCallback`: kotlin.String, `amountMsat`: kotlin.ULong, `mintSecret`: kotlin.String): FfiRequest {
+            return FfiConverterTypeFfiRequest.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_mint_invoice_request(
+        FfiConverterString.lower(`payCallback`),FfiConverterULong.lower(`amountMsat`),FfiConverterString.lower(`mintSecret`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Ask for a mint invoice, naming the note it will credit with
+         * `h = sha256(secret)`.
+         */
+    @Throws(LnurlcashException::class) fun `mintInvoiceRequestWithHash`(`payCallback`: kotlin.String, `amountMsat`: kotlin.ULong, `h`: kotlin.String): FfiRequest {
+            return FfiConverterTypeFfiRequest.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_mint_invoice_request_with_hash(
+        FfiConverterString.lower(`payCallback`),FfiConverterULong.lower(`amountMsat`),FfiConverterString.lower(`h`),_status)
 }
     )
     }

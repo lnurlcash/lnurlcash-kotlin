@@ -65,11 +65,35 @@ public data class PayRequest(
     public val minSendableMsat: Long,
     public val maxSendableMsat: Long,
     public val metadata: String,
-    /** Present when paying this mints a bearer note. */
+    /**
+     * Present when paying this mints a bearer note: the raw LUD-17 withdraw
+     * endpoint, in either the plain or the `lnurlw://` spelling. The draft says
+     * "as described in LUD-17", and LUD-17 describes both, so a wallet accepts
+     * either unchanged.
+     */
     public val withdrawLink: String?,
     public val mintPubkey: String?,
     /** Absent means the service advertised no fee, which the spec reads as fee-free. */
     public val mintFee: MintFee?,
+    /**
+     * LUD-12's field, and LUD-25's minting capability. A mint must allow the 64
+     * characters a hex-encoded SHA-256 commitment needs.
+     */
+    public val commentAllowed: Long?,
+    /**
+     * Additive ForgeSworn extension: the service also accepts the same
+     * commitment as an `h` parameter. Never a substitute for the mandatory
+     * comment, and anything that is not exactly true reads as false.
+     */
+    public val mintToHash: Boolean,
+    /**
+     * Whether this service can mint a current-draft LUD-25 note.
+     *
+     * [mintToHash] alone cannot stand in for it: that extension is additive and
+     * predates the comment spelling, and a service without the comment capacity
+     * has nowhere to put the commitment.
+     */
+    public val namesMintOutput: Boolean,
 )
 
 public data class Invoice(
@@ -82,8 +106,10 @@ public data class Invoice(
 public data class InvoiceStatus(
     public val settled: Boolean,
     /**
-     * For LNURLcash this preimage IS the bearer note's spend secret, and the
-     * service necessarily generated it. Rotate immediately.
+     * Settlement proof, not the note. Current LUD-25 binds a note to a
+     * wallet-chosen secret named in the mint comment, so a preimage here
+     * redeems nothing. (An earlier draft keyed the note by this value, which
+     * made every routing node that forwarded the payment a holder of it.)
      */
     public val preimage: String?,
     public val invoice: String,

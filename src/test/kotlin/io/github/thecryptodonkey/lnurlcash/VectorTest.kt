@@ -6,7 +6,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import uniffi.lnurlcash_core.mintInvoiceRequest
+import uniffi.lnurlcash_core.mintInvoiceRequestWithHash
+import uniffi.lnurlcash_core.parseInvoice
+import uniffi.lnurlcash_core.parsePayRequest
+import uniffi.lnurlcash_core.parseVerify
 
 /**
  * Every assertion here comes from lnurlcash-conformance, the same files the
@@ -185,5 +191,104 @@ class VectorTest {
         val fee = MintFee(baseFeeMsat = 3, feePpm = 999_999)
         assertEquals(2_099_999_997L, applyMintFee(allBitcoin, fee))
         assertEquals(3_000_001L, grossUpForMintFee(1, fee))
+    }
+
+    /**
+     * LUD-25 minting, from pay-request.json.
+     *
+     * This is the suite that would have caught the library sitting on the
+     * deleted preimage-keyed model for a month: nothing here states an opinion
+     * of its own, so a draft change lands as a red test rather than as a silent
+     * divergence discovered by a wallet that could not mint.
+     */
+    @Test
+    fun `pay request vectors`() {
+        val vectors = Vectors.load("pay-request.json")
+
+        for (case in vectors.array("accepted").map { it.jsonObject }) {
+            val name = case.str("name")
+            val info = parsePayRequest(case.obj("body").toString())
+            assertEquals(case.strOrNull("withdrawLink"), info.withdrawLink, name)
+            assertEquals(case.longOrNull("commentAllowed"), info.commentAllowed?.toLong(), name)
+            val expectedFee = case["mintFee"]?.takeIf { it !is JsonNull }?.mintFee()
+            assertEquals(expectedFee?.baseFeeMsat, info.mintFee?.baseFeeMsat?.toLong(), name)
+            assertEquals(expectedFee?.feePpm, info.mintFee?.feePpm?.toLong(), name)
+            // A payRequest is only a mint if it can carry the commitment, and a
+            // mint is only a mint if it advertises where the note will live.
+            assertEquals(info.withdrawLink != null, info.namesMintOutput, name)
+        }
+
+        for (case in vectors.array("rejected").map { it.jsonObject }) {
+            val name = case.str("name")
+            assertTrue(
+                runCatching { parsePayRequest(case.obj("body").toString()) }.isFailure,
+                "$name: must not parse",
+            )
+        }
+
+        // The mint callback names the note before the invoice exists.
+        val callback = "https://mint.example/p/cb"
+        val mintCallback = vectors.obj("mintCallback")
+        for (case in mintCallback.array("accepted").map { it.jsonObject }) {
+            val name = case.str("name")
+            val comment = case.str("comment")
+            val amount = case.long("amountMsat")
+            val request = mintInvoiceRequestWithHash(callback, amount.toULong(), comment)
+            // LUD-25 carries the commitment as a mandatory LUD-12 comment; h
+            // repeats it for the additive ForgeSworn profile.
+            assertTrue(request.url.contains("comment=$comment"), "$name: ${request.url}")
+            assertTrue(request.url.contains("h=$comment"), name)
+            assertTrue(request.url.contains("amount=$amount"), name)
+            assertEquals(comment, case.str("noteId"), name)
+            assertEquals(false, case.bool("paymentPreimageIsBearerK1"), name)
+        }
+        for (case in mintCallback.array("rejected").map { it.jsonObject }) {
+            val name = case.str("name")
+            val amount = case.long("amountMsat")
+            val comment = case.strOrNull("comment")
+            // A null comment is the unnamed mint the draft forbids: this
+            // library cannot express one, because the minting builder requires
+            // the commitment. A malformed one is refused before it is sent.
+            val attempt = runCatching {
+                if (comment == null) {
+                    mintInvoiceRequest(callback, amount.toULong(), "")
+                } else {
+                    mintInvoiceRequestWithHash(callback, amount.toULong(), comment)
+                }
+            }
+            assertTrue(attempt.isFailure, "$name: must be refused before anything is sent")
+        }
+
+        val invoice = vectors.obj("invoice")
+        for (case in invoice.array("accepted").map { it.jsonObject }) {
+            val name = case.str("name")
+            val parsed = parseInvoice(case.obj("body").toString(), case.long("requestedMsat").toULong())
+            assertEquals(case.bool("disposable"), parsed.disposable, name)
+            assertEquals(case.strOrNull("verify"), parsed.verify, name)
+        }
+        for (case in invoice.array("rejected").map { it.jsonObject }) {
+            val name = case.str("name")
+            assertTrue(
+                runCatching {
+                    parseInvoice(case.obj("body").toString(), case.long("requestedMsat").toULong())
+                }.isFailure,
+                "$name: must not parse",
+            )
+        }
+
+        val verify = vectors.obj("verify")
+        for (case in verify.array("accepted").map { it.jsonObject }) {
+            val name = case.str("name")
+            val parsed = parseVerify(case.obj("body").toString())
+            assertEquals(case.bool("settled"), parsed.settled, name)
+            assertEquals(case.strOrNull("preimage"), parsed.preimage, name)
+        }
+        for (case in verify.array("rejected").map { it.jsonObject }) {
+            val name = case.str("name")
+            assertTrue(
+                runCatching { parseVerify(case.obj("body").toString()) }.isFailure,
+                "$name: must not parse",
+            )
+        }
     }
 }

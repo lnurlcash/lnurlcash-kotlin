@@ -13,6 +13,17 @@ and the adversarial mock mint.
 
 ### Design notes
 
+**Minting is comment-bound, and the payment preimage is only settlement proof.**
+The draft keyed a fresh note by the invoice's payment preimage until 31 August
+2026, when that fallback was removed outright: a preimage propagates to every
+node that forwarded the payment, routinely before the payer has finished
+processing it, so a note keyed by one is a note all of them can spend. A WALLET
+now chooses the secret itself, before any invoice exists, and hands the SERVICE
+only `sha256(secret)` in a mandatory LUD-12 `comment`; a minting `payRequest`
+must advertise `commentAllowed >= 64` or it cannot mint at all. `requestMintInvoice` takes the secret the
+caller will hold the note by - persist it before paying, because the service
+holds nothing that could reconstruct it.
+
 **The mint address carries the node stats under their wire names.** lnurl-mint
 advertises `nodeCapacity` in msat, so `nodeCapacityMsat` is a rename and is
 mapped explicitly — the TypeScript sibling shipped that rename unmapped and

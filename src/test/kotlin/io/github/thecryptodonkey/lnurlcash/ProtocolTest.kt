@@ -159,11 +159,18 @@ class ProtocolTest {
     }
 
     @Test
-    fun `mints a note from a paid invoice and rotates it`() = withMint { mint, client ->
+    fun `mints a note the service never saw the secret of`() = withMint { mint, client ->
         val pay = client.fetchPayRequest("${mint.url}/.well-known/lnurlp/mint")
         val withdrawLink = pay.withdrawLink!!
+        // LUD-25 minting is comment-bound, so a mint must leave room for the
+        // 64-character commitment. Without it there is nowhere to name the note.
+        assertTrue(pay.namesMintOutput)
+        assertEquals(64L, pay.commentAllowed)
 
-        val invoice = client.requestInvoice(pay.callback, 21_000)
+        // The wallet chooses the secret, before any invoice exists, and
+        // persists it before paying. The service is told sha256 of it, no more.
+        val mintSecret = secret(42)
+        val invoice = client.requestMintInvoice(pay.callback, 21_000, mintSecret)
         assertTrue(!invoice.disposable)
         val verifyUrl = invoice.verifyUrl!!
         val paymentHash = verifyUrl.substringAfterLast('/')
@@ -171,16 +178,40 @@ class ProtocolTest {
 
         val status = client.fetchInvoiceStatus(verifyUrl)
         assertTrue(status.settled)
-        // the preimage IS the note secret - which the mint necessarily saw
-        val claimed = status.preimage!!
-        assertEquals(paymentHash, hashK1(claimed))
+        // The preimage is settlement proof and nothing else. Every node that
+        // forwarded the payment learned it; under the earlier draft that made
+        // all of them holders of the note. Here it redeems nothing.
+        val preimage = status.preimage!!
+        assertEquals(paymentHash, hashK1(preimage))
+        assertNotEquals(mintSecret, preimage)
+        assertTrue(
+            runCatching { client.fetchNoteInfo(buildNoteUrl(withdrawLink, preimage)!!) }.isFailure,
+            "the payment preimage must not redeem the note",
+        )
 
-        val info = client.fetchNoteInfo(buildNoteUrl(withdrawLink, claimed)!!)
+        // The wallet's own secret is the note.
+        val info = client.fetchNoteInfo(buildNoteUrl(withdrawLink, mintSecret)!!)
         assertEquals(21_000, info.maxWithdrawableMsat)
-        val rotated = client.rotate(info.callback, claimed).getOrThrow()
-        // after rotating, the secret the mint generated is worthless
-        assertEquals("burned", mint.noteState(claimed))
+        val rotated = client.rotate(info.callback, mintSecret).getOrThrow()
+        assertEquals("burned", mint.noteState(mintSecret))
         assertEquals("outstanding", mint.noteState(rotated.k1))
+    }
+
+    @Test
+    fun `refuses to pay for a note it cannot name`() = withMint { mint, client ->
+        val pay = client.fetchPayRequest("${mint.url}/.well-known/lnurlp/mint")
+
+        // A malformed commitment is refused before the request leaves, so a
+        // wallet never pays for a quote the service was always going to reject.
+        assertTrue(
+            runCatching {
+                client.requestMintInvoice(pay.callback, 21_000, "not-a-32-byte-secret")
+            }.isFailure,
+        )
+
+        // And an unnamed mint quote is refused by the service itself, before
+        // any invoice exists to pay.
+        assertTrue(runCatching { client.requestInvoice(pay.callback, 21_000) }.isFailure)
     }
 
     @Test

@@ -14,6 +14,7 @@ import okhttp3.Response
 import uniffi.lnurlcash_core.FfiRequest
 import uniffi.lnurlcash_core.LnurlcashException
 import uniffi.lnurlcash_core.invoiceRequest
+import uniffi.lnurlcash_core.mintInvoiceRequest
 import uniffi.lnurlcash_core.meltRequest
 import uniffi.lnurlcash_core.mergeRequest
 import uniffi.lnurlcash_core.mintAddressRequest
@@ -237,9 +238,13 @@ public class LnurlcashClient(
             withdrawLink = info.withdrawLink,
             mintPubkey = info.mintPubkey,
             mintFee = info.mintFee?.toKotlin(),
+            commentAllowed = info.commentAllowed?.toLong(),
+            mintToHash = info.mintToHash,
+            namesMintOutput = info.namesMintOutput,
         )
     }
 
+    /** A plain LUD-06 invoice. Mints nothing: it names no output. */
     public suspend fun requestInvoice(payCallback: String, amountMsat: Long): Invoice {
         val body = get(invoiceRequest(payCallback, amountMsat.toULong()))
         val invoice = parseInvoice(body, amountMsat.toULong())
@@ -251,11 +256,32 @@ public class LnurlcashClient(
     }
 
     /**
+     * An invoice that mints a note the caller already holds the secret to.
+     *
+     * Persist [mintSecret] before paying the invoice this returns. The service
+     * only ever learns its hash, so it cannot help reconstruct it, and a paid
+     * invoice whose secret was lost is a note nobody can spend.
+     */
+    public suspend fun requestMintInvoice(
+        payCallback: String,
+        amountMsat: Long,
+        mintSecret: String,
+    ): Invoice {
+        val body = get(mintInvoiceRequest(payCallback, amountMsat.toULong(), mintSecret))
+        val invoice = parseInvoice(body, amountMsat.toULong())
+        return Invoice(
+            invoice = invoice.pr,
+            verifyUrl = invoice.verify,
+            disposable = invoice.disposable,
+        )
+    }
+
+    /**
      * LUD-21: has this invoice settled?
      *
-     * If it discloses a preimage, that preimage IS the note's spend secret and
-     * the service saw it. Anyone who saw the unpaid invoice can poll this too -
-     * the payment hash travels inside the invoice. Rotate immediately.
+     * Safe to call and safe to disclose. Minting is comment-bound, so the
+     * preimage a settled invoice reveals is settlement proof and never the
+     * note's credential.
      */
     public suspend fun fetchInvoiceStatus(verifyUrl: String): InvoiceStatus {
         val result = parseVerify(get(verifyRequest(verifyUrl)))
