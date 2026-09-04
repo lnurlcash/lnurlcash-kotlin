@@ -19,21 +19,47 @@ HTTP considers GET idempotent, so clients retry one freely when a connection
 fails mid-flight. An LNURLcash mutation is emphatically *not* idempotent: the
 first attempt burns the input note.
 
-So when a service applies a rotate and the connection then drops, a retrying
-client sends it again, gets `"invalid or already spent k1"` for the second
-attempt, and reports a **definitive rejection**. The caller concludes nothing
-happened and discards the fresh secret — which was the only copy of the note
-the service just minted. The money is gone, and every layer behaved
-reasonably.
+For most of this draft's life that was fatal. A service applied a rotate, the
+connection dropped, a retrying client sent it again, got `"invalid or already
+spent k1"` for the second attempt, and reported a **definitive rejection**. The
+caller concluded nothing had happened and discarded the fresh secret — which
+was the only copy of the note the service had just minted. The money was gone,
+and every layer had behaved reasonably.
 
-The JDK's own `java.net.http.HttpClient` does exactly this, and offers no way
-to switch it off. That is why this library depends on OkHttp and builds its
-default client with `retryOnConnectionFailure(false)`. **If you supply your
-own client, it must have retries disabled.**
+The JDK's own `java.net.http.HttpClient` does exactly that resend, and offers
+no way to switch it off. That is why this library depends on OkHttp and builds
+its default client with `retryOnConnectionFailure(false)`. It was not theory:
+running this library against a mock mint that hangs up mid-mutation failed two
+tests before the transport was changed.
 
-This was not theory. It was found by running this library against a mock mint
-that hangs up mid-mutation, and it failed two tests before the transport was
-changed.
+**LUD-25 has since closed the hole at the other end.** A service MUST now
+answer a byte-identical rotate, split or merge with the success it already
+returned, signature and all. So this library re-sends one whose answer was lost
+— deliberately, bounded, and never a melt — and a dropped connection usually
+resolves into a `Confirmed` outcome instead of an `Unknown`.
+
+`mutationRetries` sets how many extra attempts (default 1; `0` restores the old
+give-up-at-once behaviour). Only rotate, split and merge — never a melt, which
+carries `pr`, is paid asynchronously and has no replay guarantee — and only an
+ambiguous failure, never a refusal the service actually considered. The re-sent
+request is byte-identical, because the replay is matched on the k1 set, `h`,
+`h2` and `amount`.
+
+Transport-level retries stay off regardless: a deliberate retry this library
+counts is a different thing from an invisible one it does not. **If you supply
+your own client, it must have retries disabled.**
+
+## Offline verification is mandatory
+
+A service MUST publish `mintPubkey` and MUST sign every note a rotate, split or
+merge mints. `fetchNoteInfo` throws for a `withdrawRequest` publishing no valid
+one, and a mutation the service confirms but does not sign comes back as
+`MutationOutcome.Unverifiable` — its own case, because the mutation **landed**:
+the note is real, and `newSecrets` is the only key to it. Persist them before
+anything else.
+
+`LnurlcashClient(requireSignatures = false)` opts out for a service that
+predates the requirement.
 
 ## Usage
 
@@ -55,6 +81,8 @@ when (val outcome = client.rotate(info.callback, info.k1)) {
             NoteFate.UNKNOWN -> {}             // keep everything, try again later
         }
     }
+    // the mutation landed, and the mint did not sign what it minted
+    is MutationOutcome.Unverifiable -> save(outcome.newSecrets)
 }
 ```
 

@@ -4,6 +4,7 @@ import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
@@ -23,6 +24,27 @@ class ProtocolTest {
             return
         }
         mint.use { runBlocking { block(it, LnurlcashClient()) } }
+    }
+
+    /**
+     * The same, with a client that gives up on the first ambiguous answer - as
+     * every client did before LUD-25 required a service to replay a retried
+     * mutation.
+     *
+     * The tests that assert what an unresolved mutation carries need it: with
+     * retries on, a conforming mint simply answers again and there is nothing
+     * left to carry.
+     */
+    private fun withMintNoRetry(
+        vararg flags: String,
+        block: suspend (MockMint, LnurlcashClient) -> Unit,
+    ) {
+        val mint = MockMint.start(*flags)
+        if (mint == null) {
+            println("skipping: the conformance repo's mock mint was not found")
+            return
+        }
+        mint.use { runBlocking { block(it, LnurlcashClient(mutationRetries = 0)) } }
     }
 
     @Test
@@ -245,7 +267,70 @@ class ProtocolTest {
     // ---- ambiguous outcomes ----
 
     @Test
-    fun `a lost rotate preserves its fresh secret`() = withMint("--dropAfterMutation=true") { mint, client ->
+    fun `a lost rotate completes by asking again`() = withMint("--dropAfterMutation=true") { mint, client ->
+        // The mutation landed and the answer was lost on the way back. LUD-25
+        // now requires the service to answer the identical request with the
+        // success it already gave, so asking a second time turns this from an
+        // unresolved maybe into a completed rotate.
+        val k1 = secret(30)
+        mint.credit(k1, 21_000)
+
+        val outcome = client.rotate(mint.callback(), k1)
+        assertTrue(outcome is MutationOutcome.Confirmed, "got $outcome")
+        assertEquals("burned", mint.noteState(k1))
+        assertEquals("outstanding", mint.noteState(outcome.value.k1))
+        // the replay repeats the signature, so a note recovered this way is as
+        // verifiable as one whose first answer arrived
+        assertNotNull(outcome.value.signature)
+    }
+
+    @Test
+    fun `a mint that will not replay still hands the secrets back`() =
+        withMint("--dropAfterMutation=true", "--retriedMutation=refuse") { mint, client ->
+            // A service that has not implemented the replay rule answers the
+            // second attempt as an already-spent input. This library cannot
+            // tell that from a genuine double spend - at the wire they are the
+            // same answer - so it hands the secrets back rather than a verdict.
+            val k1 = secret(31)
+            mint.credit(k1, 21_000)
+
+            val outcome = client.rotate(mint.callback(), k1)
+            assertTrue(outcome is MutationOutcome.Rejected, "got $outcome")
+        }
+
+    @Test
+    fun `an unsigned rotate is refused without losing the note`() =
+        withMint("--signatures=false") { mint, client ->
+            // Offline verification stopped being optional, so a service issuing
+            // no signatures is non-compliant rather than merely basic. The
+            // mutation LANDED though, and the fresh secret is the only key to
+            // the note it minted - so it is its own outcome, carrying them.
+            val k1 = secret(32)
+            mint.credit(k1, 21_000)
+
+            val outcome = client.rotate(mint.callback(), k1)
+            assertTrue(outcome is MutationOutcome.Unverifiable, "got $outcome")
+            assertEquals(1, outcome.newSecrets.size)
+            // the note the caller was refused is real and outstanding
+            assertEquals("outstanding", mint.noteState(outcome.newSecrets.first()))
+        }
+
+    @Test
+    fun `an unsigned service still works when the caller opts out`() =
+        withMint("--signatures=false") { mint, _ ->
+            val client = LnurlcashClient(requireSignatures = false)
+            val k1 = secret(33)
+            mint.credit(k1, 21_000)
+
+            val info = client.fetchNoteInfo(mint.noteUrl(k1))
+            val outcome = client.rotate(info.callback, k1)
+            assertTrue(outcome is MutationOutcome.Confirmed, "got $outcome")
+            assertNull(outcome.value.signature)
+            assertEquals("outstanding", mint.noteState(outcome.value.k1))
+        }
+
+    @Test
+    fun `a lost rotate preserves its fresh secret`() = withMintNoRetry("--dropAfterMutation=true") { mint, client ->
         val k1 = secret(14)
         mint.credit(k1, 21_000)
 
@@ -262,7 +347,7 @@ class ProtocolTest {
 
     @Test
     fun `a lost split preserves both secrets in output order`() =
-        withMint("--dropAfterMutation=true") { mint, client ->
+        withMintNoRetry("--dropAfterMutation=true") { mint, client ->
             val k1 = secret(15)
             mint.credit(k1, 21_000)
 
@@ -292,7 +377,7 @@ class ProtocolTest {
     }
 
     @Test
-    fun `a 200 that confirms nothing is ambiguous`() = withMint("--unconfirmedMutation=true") { mint, client ->
+    fun `a 200 that confirms nothing is ambiguous`() = withMintNoRetry("--unconfirmedMutation=true") { mint, client ->
         val k1 = secret(18)
         mint.credit(k1, 21_000)
         val outcome = client.rotate(mint.callback(), k1)
