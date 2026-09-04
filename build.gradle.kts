@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.4.10" apply true
     `java-library`
     `maven-publish`
+    signing
 }
 
 group = "io.github.thecryptodonkey"
@@ -14,7 +15,7 @@ repositories {
 dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     // the generated bindings, which load the Rust core through JNA
-    api(project(":bindings"))
+    api(project(":lnurlcash-kotlin-bindings"))
     // OkHttp, specifically for retryOnConnectionFailure(false). The JDK's own
     // HttpClient retries idempotent GETs on a mid-flight connection reset and
     // offers no way to switch that off - which is fatal here, because an
@@ -39,12 +40,24 @@ kotlin {
 
 java {
     withSourcesJar()
+    // Central requires a javadoc artifact to exist. There are no Java sources
+    // here, so the task is NO-SOURCE and the jar is empty - which Central
+    // accepts. Real API docs would mean adding Dokka to the release path; see
+    // RELEASING.md.
+    withJavadocJar()
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
 
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(17)
+}
+
+// A published jar should be a function of its inputs and nothing else, so two
+// builds of one tag are byte-identical and a consumer can check that claim.
+tasks.withType<Jar>().configureEach {
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
 }
 
 tasks.test {
@@ -74,9 +87,50 @@ publishing {
                     license {
                         name.set("MIT")
                         url.set("https://opensource.org/licenses/MIT")
+                        distribution.set("repo")
                     }
+                }
+                developers {
+                    developer {
+                        id.set("TheCryptoDonkey")
+                        name.set("TheCryptoDonkey")
+                        url.set("https://github.com/TheCryptoDonkey")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:https://github.com/TheCryptoDonkey/lnurlcash-kotlin.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/TheCryptoDonkey/lnurlcash-kotlin.git")
+                    url.set("https://github.com/TheCryptoDonkey/lnurlcash-kotlin")
+                }
+                issueManagement {
+                    system.set("GitHub")
+                    url.set("https://github.com/TheCryptoDonkey/lnurlcash-kotlin/issues")
                 }
             }
         }
+    }
+    repositories {
+        // Not a remote. Central's Portal API takes one upload of a whole
+        // deployment, so the release assembles both modules into a single
+        // local repository tree and posts that as one bundle. Nothing is
+        // published a module at a time, and a half-uploaded release is not a
+        // state that can exist.
+        maven {
+            name = "staging"
+            url = uri(rootProject.layout.buildDirectory.dir("staging-deploy"))
+        }
+    }
+}
+
+signing {
+    // Central rejects an unsigned deployment. The key is only present in the
+    // release workflow, so an ordinary local `gradle build` neither needs one
+    // nor silently publishes something unsigned.
+    val signingKey = System.getenv("MAVEN_GPG_PRIVATE_KEY")
+    val signingPassword = System.getenv("MAVEN_GPG_PASSPHRASE")
+    isRequired = signingKey != null
+    if (signingKey != null) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign(publishing.publications["maven"])
     }
 }

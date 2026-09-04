@@ -5,6 +5,27 @@ carry breaking changes; pin an exact version.
 
 ## 0.1.0 — unreleased
 
+### Published to Maven Central
+
+- The jar now carries the native core for linux-x86-64, linux-aarch64,
+  darwin-x86-64, darwin-aarch64 and win32-x86-64, under the resource prefixes
+  JNA computes, so `implementation("io.github.thecryptodonkey:lnurlcash-kotlin")`
+  is all a consumer needs. No sibling checkout, no `jna.library.path`, no
+  `cargo` on the machine.
+- The bindings module publishes as `lnurlcash-kotlin-bindings` and arrives
+  transitively. It was previously rendered into the POM as
+  `lnurlcash-kotlin:bindings:unspecified`, a coordinate that does not exist and
+  could never have resolved, so the published POM would have been broken on
+  arrival.
+- `core.sha` pins the exact `lnurlcash-core` commit a release is built from.
+  Every native comes from it, and the release regenerates the bindings against
+  it and fails on any difference — a binding that disagrees with the library it
+  calls is undefined behaviour on a money path, and it is invisible from either
+  side alone.
+- Publishing refuses a native set with a hole in it. A missing platform is not
+  a degraded release, it is an `UnsatisfiedLinkError` for everyone on that
+  platform, and a version on Central cannot be withdrawn.
+
 ### Seed-recoverable note secrets, and the private lookup a restore needs
 
 - `deriveCashRoot`, `deriveCashDomainNode`, `deriveCashSecret`,
