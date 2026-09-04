@@ -791,6 +791,22 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -810,9 +826,25 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_apply_mint_fee(`grossMsat`: Long,`fee`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
+    fun uniffi_lnurlcash_core_fn_func_build_note_info_url_by_hash(`withdrawLink`: RustBuffer.ByValue,`h`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_build_note_url(`withdrawLink`: RustBuffer.ByValue,`k1`: RustBuffer.ByValue,`amountMsat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_cash_domain_indices(`rootHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_cash_secret_at(`domainNodeHex`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_decode_bolt11_amount_msat(`pr`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_derive_cash_domain_node(`rootHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_derive_cash_root(`seedHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_derive_cash_secret(`rootHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_derive_note_root(`seedHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_derive_note_secret(`rootHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_describe_mint_fee(`fee`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1002,9 +1034,25 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_apply_mint_fee(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_build_note_info_url_by_hash(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_build_note_url(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_cash_domain_indices(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_cash_secret_at(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_decode_bolt11_amount_msat(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_derive_cash_domain_node(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_derive_cash_root(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_derive_cash_secret(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_derive_note_root(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_derive_note_secret(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_describe_mint_fee(
     ): Short
@@ -1101,10 +1149,34 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_apply_mint_fee() != 39496.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_lnurlcash_core_checksum_func_build_note_info_url_by_hash() != 64468.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_lnurlcash_core_checksum_func_build_note_url() != 43552.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_lnurlcash_core_checksum_func_cash_domain_indices() != 9288.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_cash_secret_at() != 13896.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_lnurlcash_core_checksum_func_decode_bolt11_amount_msat() != 62228.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_domain_node() != 15623.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_root() != 21989.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_secret() != 51604.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_note_root() != 15369.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_note_secret() != 21125.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_describe_mint_fee() != 23571.toShort()) {
@@ -1261,6 +1333,29 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
  * @suppress
  * */
 object NoPointer
+
+/**
+ * @suppress
+ */
+public object FfiConverterUInt: FfiConverter<UInt, Int> {
+    override fun lift(value: Int): UInt {
+        return value.toUInt()
+    }
+
+    override fun read(buf: ByteBuffer): UInt {
+        return lift(buf.getInt())
+    }
+
+    override fun lower(value: UInt): Int {
+        return value.toInt()
+    }
+
+    override fun allocationSize(value: UInt) = 4UL
+
+    override fun write(value: UInt, buf: ByteBuffer) {
+        buf.putInt(value.toInt())
+    }
+}
 
 /**
  * @suppress
@@ -2138,6 +2233,34 @@ public object FfiConverterOptionalTypeFfiMintFee: FfiConverterRustBuffer<FfiMint
 /**
  * @suppress
  */
+public object FfiConverterSequenceUInt: FfiConverterRustBuffer<List<kotlin.UInt>> {
+    override fun read(buf: ByteBuffer): List<kotlin.UInt> {
+        val len = buf.getInt()
+        return List<kotlin.UInt>(len) {
+            FfiConverterUInt.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.UInt>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterUInt.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.UInt>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterUInt.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
@@ -2181,6 +2304,19 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     )
     }
     
+
+        /**
+         * The informational GET for a note named by its hash rather than its secret,
+         * so nothing spendable goes on the wire. What a restore walk uses.
+         */ fun `buildNoteInfoUrlByHash`(`withdrawLink`: kotlin.String, `h`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_build_note_info_url_by_hash(
+        FfiConverterString.lower(`withdrawLink`),FfiConverterString.lower(`h`),_status)
+}
+    )
+    }
+    
  fun `buildNoteUrl`(`withdrawLink`: kotlin.String, `k1`: kotlin.String, `amountMsat`: kotlin.ULong?): kotlin.String? {
             return FfiConverterOptionalString.lift(
     uniffiRustCall() { _status ->
@@ -2190,11 +2326,112 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     )
     }
     
+
+        /**
+         * The four raw uint32 levels a mint's subtree hangs off. Exposed for a wallet
+         * diagnosing a restore that finds nothing.
+         */
+    @Throws(LnurlcashException::class) fun `cashDomainIndices`(`rootHex`: kotlin.String, `host`: kotlin.String): List<kotlin.UInt> {
+            return FfiConverterSequenceUInt.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_cash_domain_indices(
+        FfiConverterString.lower(`rootHex`),FfiConverterString.lower(`host`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The i-th note secret beneath a mint's domain node.
+         */
+    @Throws(LnurlcashException::class) fun `cashSecretAt`(`domainNodeHex`: kotlin.String, `index`: kotlin.UInt): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_cash_secret_at(
+        FfiConverterString.lower(`domainNodeHex`),FfiConverterUInt.lower(`index`),_status)
+}
+    )
+    }
+    
  fun `decodeBolt11AmountMsat`(`pr`: kotlin.String): kotlin.ULong? {
             return FfiConverterOptionalULong.lift(
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_decode_bolt11_amount_msat(
         FfiConverterString.lower(`pr`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * `m/139'/d1/d2/d3/d4` for one mint, as a 64-byte hex node.
+         *
+         * Every unhardened level in LUD-25's path is at or above this node, so a
+         * hardware signer given THIS rather than the seed needs no elliptic curve:
+         * each index beneath it is one hardened step. Whoever derives it can derive
+         * every note secret held at that mint, so it is provisioning material - one
+         * mint's subtree, not the wallet.
+         */
+    @Throws(LnurlcashException::class) fun `deriveCashDomainNode`(`rootHex`: kotlin.String, `host`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_cash_domain_node(
+        FfiConverterString.lower(`rootHex`),FfiConverterString.lower(`host`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * `m/139'` from a seed, as a 64-byte hex node. `seed_hex` is raw seed bytes;
+         * a 64-byte BIP39 seed is the interop case.
+         */
+    @Throws(LnurlcashException::class) fun `deriveCashRoot`(`seedHex`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_cash_root(
+        FfiConverterString.lower(`seedHex`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The i-th note secret at a mint, from the root. Re-derives the domain node
+         * each call; hold the node for a run of secrets.
+         */
+    @Throws(LnurlcashException::class) fun `deriveCashSecret`(`rootHex`: kotlin.String, `host`: kotlin.String, `index`: kotlin.UInt): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_cash_secret(
+        FfiConverterString.lower(`rootHex`),FfiConverterString.lower(`host`),FfiConverterUInt.lower(`index`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The LEGACY scheme's root, for finding notes minted before LUD-25 specified
+         * a derivation. Do not mint under it.
+         */
+    @Throws(LnurlcashException::class) fun `deriveNoteRoot`(`seedHex`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_note_root(
+        FfiConverterString.lower(`seedHex`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * The LEGACY scheme's i-th secret at `host`. Do not mint under it.
+         */
+    @Throws(LnurlcashException::class) fun `deriveNoteSecret`(`rootHex`: kotlin.String, `host`: kotlin.String, `index`: kotlin.UInt): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_note_secret(
+        FfiConverterString.lower(`rootHex`),FfiConverterString.lower(`host`),FfiConverterUInt.lower(`index`),_status)
 }
     )
     }

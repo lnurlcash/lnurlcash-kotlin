@@ -5,6 +5,22 @@ carry breaking changes; pin an exact version.
 
 ## 0.1.0 — unreleased
 
+### Seed-recoverable note secrets, and the private lookup a restore needs
+
+- `deriveCashRoot`, `deriveCashDomainNode`, `deriveCashSecret`,
+  `cashSecretAt`, `cashDomainIndices`: LUD-25's `m/139'` scheme, from the Rust
+  core. Nodes cross as 64 bytes of hex - `privateKey || chainCode` - so
+  nothing here has to model a BIP-32 key.
+- `deriveNoteRoot` / `deriveNoteSecret`: the pre-spec HMAC scheme, so notes
+  minted under it stay findable. Not what to mint under.
+- `buildNoteInfoUrlByHash`: LUD-25's `?h=` informational GET, which is what a
+  restore walk should use. Asking by secret publishes the very indices the
+  wallet is about to mint under.
+- Bindings regenerated. The new derivation vectors are driven through the
+  Kotlin facade rather than the core directly, so the FFI boundary is graded
+  too: every value crosses as hex, and a marshalling mistake there would be
+  invisible from either side alone.
+
 First release. An idiomatic Kotlin wrapper over
 [lnurlcash-core](https://github.com/TheCryptoDonkey/lnurlcash-core), checked
 against the shared
