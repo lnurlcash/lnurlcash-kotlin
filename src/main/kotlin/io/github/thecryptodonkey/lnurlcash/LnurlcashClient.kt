@@ -246,11 +246,28 @@ public class LnurlcashClient(
                 signature = rotated.value.signature,
                 callback = info.callback,
             )
-            else -> SettledNote(
+            // Definitive: the service refused and burned nothing, so the
+            // exposed k1 and its signature are still the note. This is the
+            // only outcome the best-effort fallback may cover.
+            is MutationOutcome.Rejected -> SettledNote(
                 k1 = k1,
                 amountMsat = info.maxWithdrawableMsat,
                 signature = signature,
                 callback = info.callback,
+            )
+            // Unknown MAY have applied; Unverifiable definitely DID. Either
+            // way the rotated note exists, or might, at the hash the wallet
+            // disclosed, and newSecrets is the only key to it. These used to
+            // fall into an `else` beside Rejected and return the old k1 --
+            // handing back a secret the service had burned while dropping the
+            // live one, which loses the note outright.
+            is MutationOutcome.Unknown -> throw LnurlcashException.Ambiguous(
+                rotated.message,
+                rotated.newSecrets,
+            )
+            is MutationOutcome.Unverifiable -> throw LnurlcashException.Unverifiable(
+                rotated.message,
+                rotated.newSecrets,
             )
         }
     }
