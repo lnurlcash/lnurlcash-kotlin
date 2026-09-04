@@ -19,7 +19,7 @@ there is nothing to build and no `jna.library.path` to set:
 |---|---|---|
 | Linux (glibc 2.35+) | yes | yes |
 | macOS | yes | yes |
-| Windows | yes | not yet |
+| Windows | yes | yes |
 
 Anywhere else — Alpine and its musl libc, FreeBSD, 32-bit anything — build
 [the core](https://github.com/TheCryptoDonkey/lnurlcash-core) yourself and

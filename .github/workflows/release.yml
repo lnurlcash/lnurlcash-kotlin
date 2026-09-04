@@ -3,7 +3,7 @@ name: release
 # Publishes to Maven Central through the Portal API.
 #
 # The hard part of this release is not the upload, it is that the jar carries
-# compiled machine code. Five natives are built on five runners, and the whole
+# compiled machine code. Six natives are built on six runners, and the whole
 # set has to come from ONE commit of lnurlcash-core - the same commit the
 # checked-in UniFFI bindings were generated from. A binding that disagrees with
 # the library it calls is undefined behaviour on a money path, and nothing
@@ -26,6 +26,11 @@ on:
         options: [USER_MANAGED, AUTOMATIC]
         default: USER_MANAGED
         required: true
+      dry-run:
+        description: Build and assemble everything, upload nothing. Needs no secrets.
+        type: boolean
+        default: false
+        required: false
 
 permissions:
   contents: read
@@ -82,6 +87,11 @@ jobs:
             # Without a static CRT the DLL needs the Visual C++ redistributable
             # on the consumer's machine, which is not a thing a Kotlin library
             # gets to ask for.
+            rustflags: -C target-feature=+crt-static
+          - runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            prefix: win32-aarch64
+            library: lnurlcash_core.dll
             rustflags: -C target-feature=+crt-static
     runs-on: ${{ matrix.runner }}
     steps:
@@ -162,8 +172,20 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
       - name: upload to Central
+        if: ${{ !inputs.dry-run }}
         run: ./scripts/publish-central.sh
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           PUBLISHING_TYPE: ${{ inputs.publishing-type || 'USER_MANAGED' }}
+
+      # A dry run exists so the six cross-platform builds are not attempted for
+      # the first time during a release nobody can take back. It needs none of
+      # the secrets, so it also works before any of them are set up.
+      - name: keep the assembled deployment
+        if: ${{ inputs.dry-run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-dry-run
+          path: build/staging-deploy
+          retention-days: 7

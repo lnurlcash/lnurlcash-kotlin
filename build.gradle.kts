@@ -3,6 +3,10 @@ plugins {
     `java-library`
     `maven-publish`
     signing
+    // Javadoc-format API docs. Central requires a javadoc artifact to exist;
+    // an empty one satisfies that and helps nobody, and the public API here is
+    // already KDoc'd because explicitApi() insists on it.
+    id("org.jetbrains.dokka-javadoc") version "2.2.0"
 }
 
 group = "io.github.thecryptodonkey"
@@ -40,13 +44,15 @@ kotlin {
 
 java {
     withSourcesJar()
-    // Central requires a javadoc artifact to exist. There are no Java sources
-    // here, so the task is NO-SOURCE and the jar is empty - which Central
-    // accepts. Real API docs would mean adding Dokka to the release path; see
-    // RELEASING.md.
-    withJavadocJar()
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+}
+
+// Not java.withJavadocJar(): that wires the `javadoc` task, which reads Java
+// sources, of which there are none here - so it produces an empty jar.
+val javadocJar = tasks.register<Jar>("javadocJar") {
+    archiveClassifier.set("javadoc")
+    from(tasks.named("dokkaGeneratePublicationJavadoc"))
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -79,6 +85,7 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             from(components["java"])
+            artifact(javadocJar)
             pom {
                 name.set("lnurlcash-kotlin")
                 description.set("LNURLcash (LUD-25) bearer notes for Kotlin and the JVM")
