@@ -292,3 +292,60 @@ class VectorTest {
         }
     }
 }
+
+/**
+ * The derivation vectors, driven through the Kotlin facade rather than the
+ * Rust directly. The core already grades itself against these files; what this
+ * adds is the FFI boundary, where every value crosses as hex and a marshalling
+ * mistake would be invisible from either side alone.
+ */
+class DerivationVectorTest {
+    @Test
+    fun `derives LUD-25 note secrets`() {
+        val vectors = Vectors.load("cash-derivation.json")
+        assertEquals(
+            "m/139'/d1/d2/d3/d4/i'",
+            vectors["scheme"]!!.jsonObject["secretPath"]!!.jsonPrimitive.content,
+        )
+        for (case in Vectors.cases("cash-derivation.json", "cases")) {
+            val name = case["name"]!!.jsonPrimitive.content
+            val host = case["host"]!!.jsonPrimitive.content
+            val index = case["index"]!!.jsonPrimitive.content.toUInt()
+            val root = deriveCashRoot(case["seedHex"]!!.jsonPrimitive.content)
+            assertEquals(case["cashRoot"]!!.jsonPrimitive.content, root, name)
+
+            val domainNode = deriveCashDomainNode(root, host)
+            assertEquals(case["domainNode"]!!.jsonPrimitive.content, domainNode, name)
+
+            val k1 = case["k1"]!!.jsonPrimitive.content
+            assertEquals(k1, deriveCashSecret(root, host, index), name)
+            // The hardware-signer path: the mint's subtree alone resolves it.
+            assertEquals(k1, cashSecretAt(domainNode, index), name)
+            assertEquals(case["noteId"]!!.jsonPrimitive.content, hashK1(k1), name)
+        }
+    }
+
+    @Test
+    fun `derives the legacy scheme too, so old notes stay findable`() {
+        for (case in Vectors.cases("derivation.json", "cases")) {
+            val name = case["name"]!!.jsonPrimitive.content
+            val root = deriveNoteRoot(case["seedHex"]!!.jsonPrimitive.content)
+            val k1 = deriveNoteSecret(
+                root,
+                case["host"]!!.jsonPrimitive.content,
+                case["index"]!!.jsonPrimitive.content.toUInt(),
+            )
+            assertEquals(case["k1"]!!.jsonPrimitive.content, k1, name)
+        }
+    }
+
+    @Test
+    fun `builds the private hash lookup a restore walk needs`() {
+        val h = "ab".repeat(32)
+        assertEquals(
+            "https://mint.example/w?h=$h",
+            buildNoteInfoUrlByHash("https://mint.example/w?k1=aa&amount=1", h),
+        )
+        assertNull(buildNoteInfoUrlByHash("https://mint.example/w", "not-a-hash"))
+    }
+}

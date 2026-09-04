@@ -5,6 +5,14 @@ import uniffi.lnurlcash_core.applyMintFee as coreApplyMintFee
 import uniffi.lnurlcash_core.buildNoteUrl as coreBuildNoteUrl
 import uniffi.lnurlcash_core.decodeBolt11AmountMsat as coreDecodeBolt11AmountMsat
 import uniffi.lnurlcash_core.describeMintFee as coreDescribeMintFee
+import uniffi.lnurlcash_core.buildNoteInfoUrlByHash as coreBuildNoteInfoUrlByHash
+import uniffi.lnurlcash_core.cashDomainIndices as coreCashDomainIndices
+import uniffi.lnurlcash_core.cashSecretAt as coreCashSecretAt
+import uniffi.lnurlcash_core.deriveCashDomainNode as coreDeriveCashDomainNode
+import uniffi.lnurlcash_core.deriveCashRoot as coreDeriveCashRoot
+import uniffi.lnurlcash_core.deriveCashSecret as coreDeriveCashSecret
+import uniffi.lnurlcash_core.deriveNoteRoot as coreDeriveNoteRoot
+import uniffi.lnurlcash_core.deriveNoteSecret as coreDeriveNoteSecret
 import uniffi.lnurlcash_core.generateNoteSecret as coreGenerateNoteSecret
 import uniffi.lnurlcash_core.grossUpForMintFee as coreGrossUpForMintFee
 import uniffi.lnurlcash_core.hashK1 as coreHashK1
@@ -40,6 +48,74 @@ public fun generateNoteSecret(): String = coreGenerateNoteSecret()
 
 /** A note's id: `sha256(secret)`, the `h` disclosed on a mutation. */
 public fun hashK1(k1: String): String = coreHashK1(k1)
+
+/**
+ * LUD-25 seed-recoverable note secrets: `m/139'`, this wallet's own root.
+ *
+ * `seedHex` is raw seed bytes as hex; a 64-byte BIP39 seed is the interop
+ * case. The returned node is `privateKey || chainCode`, 64 bytes of hex, and
+ * is bearer material for every note beneath it.
+ *
+ * The path is `m/139'/d1/d2/d3/d4/i'`, where `d1..d4` are RAW uint32 out of
+ * `HMAC-SHA256(m/139'/0, host)`. BIP-32 reads any index at or above 2^31 as
+ * hardened, so which of those levels are hardened is decided by the mint's own
+ * host name. Masking the top bit, or hardening all four, derives a different
+ * tree from every conforming wallet and restores nothing, silently.
+ */
+public fun deriveCashRoot(seedHex: String): String = coreDeriveCashRoot(seedHex)
+
+/**
+ * `m/139'/d1/d2/d3/d4` for one mint: everything above a note's own index.
+ *
+ * Every unhardened level sits at or above this node, so a hardware signer
+ * provisioned with it rather than the seed needs no elliptic curve at all.
+ * The cost is that whoever derives it can derive every note secret held at
+ * that mint: provisioning material, one mint's subtree, not the wallet.
+ */
+public fun deriveCashDomainNode(rootHex: String, host: String): String =
+    coreDeriveCashDomainNode(rootHex, host)
+
+/** The i-th note secret beneath a mint's domain node. */
+public fun cashSecretAt(domainNodeHex: String, index: UInt): String =
+    coreCashSecretAt(domainNodeHex, index)
+
+/**
+ * The i-th note secret at a mint, from the root.
+ *
+ * Re-derives the domain node on every call. Hold the node for a run of
+ * secrets, and persist the index in the SAME write that stages the record,
+ * BEFORE its hash goes on the wire.
+ */
+public fun deriveCashSecret(rootHex: String, host: String, index: UInt): String =
+    coreDeriveCashSecret(rootHex, host, index)
+
+/** The four raw uint32 levels a mint's subtree hangs off. */
+public fun cashDomainIndices(rootHex: String, host: String): List<UInt> =
+    coreCashDomainIndices(rootHex, host)
+
+/**
+ * The LEGACY pre-spec HMAC scheme's root, for finding notes minted before
+ * LUD-25 specified a derivation. Do not mint under it.
+ */
+public fun deriveNoteRoot(seedHex: String): String = coreDeriveNoteRoot(seedHex)
+
+/** The LEGACY scheme's i-th secret at [host]. Do not mint under it. */
+public fun deriveNoteSecret(rootHex: String, host: String, index: UInt): String =
+    coreDeriveNoteSecret(rootHex, host, index)
+
+/**
+ * The informational GET for a note named by its hash rather than its secret,
+ * so nothing spendable goes on the wire.
+ *
+ * What a restore walk uses: a walk queries a whole gap window of indices the
+ * wallet has not minted into yet, and asking by secret would publish exactly
+ * the secrets it is about to mint under. A rejection proves nothing - a
+ * service that does not index by hash, one that never issued the note, and one
+ * that BURNED it all answer identically, which is why the persisted per-host
+ * counter is the real backup and the scan is only a fallback.
+ */
+public fun buildNoteInfoUrlByHash(withdrawLink: String, h: String): String? =
+    coreBuildNoteInfoUrlByHash(withdrawLink, h)
 
 /** Whether a string is 32 bytes of hex - the shape of a note secret. */
 public fun isPreimage(value: String): Boolean = coreIsPreimage(value)
