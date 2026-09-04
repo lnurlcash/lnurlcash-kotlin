@@ -3,6 +3,7 @@ package io.github.thecryptodonkey.lnurlcash
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -153,6 +154,23 @@ class ProtocolTest {
         assertNotEquals(split.change, settled.k1)
         assertEquals("burned", mint.noteState(split.change))
     }
+
+    @Test
+    fun `settle surfaces a rotate that may have applied`() =
+        withMintNoRetry("--dropAfterMutation=true") { mint, client ->
+            val k1 = secret(31)
+            mint.credit(k1, 21_000)
+
+            // The service burned this k1 and minted the rotated note under h,
+            // and newSecrets is the only key to it. This outcome used to fall
+            // into an `else` beside Rejected and come back as a SettledNote
+            // carrying the burned k1, dropping the live secret entirely.
+            val thrown = assertFailsWith<LnurlcashException.Ambiguous> {
+                client.settleNote(mint.noteUrl(k1), k1, 0)
+            }
+            assertEquals(1, thrown.newSecrets.size)
+            assertNotEquals(k1, thrown.newSecrets[0])
+        }
 
     @Test
     fun `melt ok means in flight not spent`() = withMint("--meltNeverSettles=true") { mint, client ->
