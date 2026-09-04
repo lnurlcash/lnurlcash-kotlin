@@ -24,7 +24,20 @@ carry breaking changes; pin an exact version.
   side alone.
 - Publishing refuses a native set with a hole in it. A missing platform is not
   a degraded release, it is an `UnsatisfiedLinkError` for everyone on that
-  platform, and a version on Central cannot be withdrawn.
+  platform, and a version on Central cannot be withdrawn. Checked twice: once
+  against the directory, and once by opening the jar that is about to be
+  published, because a file can sit on disk and still not be packaged. The
+  second check also rejects anything under a kilobyte, which is what a
+  placeholder from a local rehearsal looks like.
+- Windows on aarch64 as well, so the only JVM platform not covered is Android,
+  which needs its own ABIs and an AAR.
+- Real Dokka javadoc for `lnurlcash-kotlin`. Central only requires a javadoc
+  artifact to exist, and an empty one helps nobody when `explicitApi()` has
+  already forced the public API to be documented.
+- The release can be dry run: it builds all six natives and assembles both
+  modules without uploading, so the cross-platform builds are not attempted for
+  the first time during a release that cannot be taken back. It needs none of
+  the publishing secrets.
 
 ### Seed-recoverable note secrets, and the private lookup a restore needs
 

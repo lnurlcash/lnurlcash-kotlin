@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 plugins {
     kotlin("jvm")
     `java-library`
@@ -28,6 +30,7 @@ val nativeLibraries = mapOf(
     "darwin-x86-64" to "liblnurlcash_core.dylib",
     "darwin-aarch64" to "liblnurlcash_core.dylib",
     "win32-x86-64" to "lnurlcash_core.dll",
+    "win32-aarch64" to "lnurlcash_core.dll",
 )
 
 // Kept OUTSIDE this module's source tree deliberately. CI asserts
@@ -54,9 +57,35 @@ kotlin {
 
 java {
     withSourcesJar()
-    withJavadocJar()
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+}
+
+// Central requires a javadoc artifact. Running Dokka over machine-written
+// bindings would produce a hundred pages describing FfiConverterUInt64, so
+// this one page says what the artifact is and points at the real docs instead.
+val javadocIndex = tasks.register("javadocIndex") {
+    val out = layout.buildDirectory.file("javadoc-stub/index.html")
+    outputs.file(out)
+    doLast {
+        out.get().asFile.apply { parentFile.mkdirs() }.writeText(
+            """
+            <!doctype html>
+            <title>lnurlcash-kotlin-bindings</title>
+            <h1>lnurlcash-kotlin-bindings</h1>
+            <p>Generated UniFFI bindings and the packaged native core behind
+            <a href="https://github.com/TheCryptoDonkey/lnurlcash-kotlin">lnurlcash-kotlin</a>.
+            This artifact is machine written and arrives as a transitive
+            dependency; depend on <code>lnurlcash-kotlin</code> instead, and
+            read its API documentation.</p>
+            """.trimIndent()
+        )
+    }
+}
+
+val javadocJar = tasks.register<Jar>("javadocJar") {
+    archiveClassifier.set("javadoc")
+    from(javadocIndex)
 }
 
 tasks.withType<Jar>().configureEach {
@@ -69,7 +98,7 @@ tasks.withType<Jar>().configureEach {
 // call, and a Central release cannot be withdrawn. So the check is a hard
 // precondition of publishing, and only of publishing - an ordinary local
 // build has no natives and does not want any.
-val verifyNativeLibraries by tasks.registering {
+val verifyNativeLibraries = tasks.register("verifyNativeLibraries") {
     val dir = nativesDir
     val expected = nativeLibraries
     doLast {
@@ -84,14 +113,42 @@ val verifyNativeLibraries by tasks.registering {
     }
 }
 
+// verifyNativeLibraries checks a directory. This checks the artifact, which is
+// a different claim: a file can sit in natives/ and still not be packaged, and
+// the jar is the only thing a consumer ever sees. It also catches a stand-in -
+// a real core is megabytes, so anything under a kilobyte is a placeholder
+// someone left behind.
+val verifyPackagedNatives = tasks.register("verifyPackagedNatives") {
+    dependsOn(tasks.jar)
+    val archive = tasks.jar.flatMap { it.archiveFile }
+    val expected = nativeLibraries
+    doLast {
+        ZipFile(archive.get().asFile).use { jar ->
+            val wrong = expected.mapNotNull { (prefix, library) ->
+                val entry = jar.getEntry("$prefix/$library")
+                when {
+                    entry == null -> "$prefix/$library is not in the jar"
+                    entry.size < 1024 -> "$prefix/$library is only ${entry.size} bytes"
+                    else -> null
+                }
+            }
+            check(wrong.isEmpty()) {
+                "the jar would not work everywhere it claims to:\n" +
+                    wrong.joinToString("\n") { "  $it" }
+            }
+        }
+    }
+}
+
 tasks.withType<PublishToMavenRepository>().configureEach {
-    dependsOn(verifyNativeLibraries)
+    dependsOn(verifyNativeLibraries, verifyPackagedNatives)
 }
 
 publishing {
     publications {
         create<MavenPublication>("maven") {
             from(components["java"])
+            artifact(javadocJar)
             pom {
                 name.set("lnurlcash-kotlin-bindings")
                 description.set(
