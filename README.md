@@ -12,6 +12,19 @@ dependencies {
 
 Early `0.x`, tracking a **draft** spec. Pin an exact version.
 
+The jar carries the native core for every platform a JVM is likely to be on, so
+there is nothing to build and no `jna.library.path` to set:
+
+| | x86-64 | aarch64 |
+|---|---|---|
+| Linux (glibc 2.35+) | yes | yes |
+| macOS | yes | yes |
+| Windows | yes | not yet |
+
+Anywhere else — Alpine and its musl libc, FreeBSD, 32-bit anything — build
+[the core](https://github.com/TheCryptoDonkey/lnurlcash-core) yourself and
+point `-Djna.library.path` at it. The Kotlin side is unchanged either way.
+
 ## Read this before you use any LNURLcash library on the JVM
 
 Every LNURLcash mutation — rotate, split, merge, melt — is an HTTP **GET**.
@@ -138,18 +151,29 @@ gradle build
 
 Tests need `node` and the
 [conformance repo](https://github.com/TheCryptoDonkey/lnurlcash-conformance)
-alongside this one, or `LNURLCASH_CONFORMANCE` pointing at it. They run the
-same vectors as the TypeScript, Python, Rust and Go implementations, plus the
-adversarial mock mint.
+alongside this one, or `LNURLCASH_CONFORMANCE` pointing at it — and that
+checkout needs its own `npm ci`, because the adversarial mock mint is a Node
+process with dependencies of its own:
+
+```bash
+git clone https://github.com/TheCryptoDonkey/lnurlcash-conformance ../lnurlcash-conformance
+(cd ../lnurlcash-conformance && npm ci)
+```
+
+They run the same vectors as the TypeScript, Python, Rust and Go
+implementations, plus the adversarial mock mint.
+
+Releases are their own thing; see [RELEASING.md](RELEASING.md).
 
 ## Android
 
-The JVM artifact works on Android as-is, but the native core must be built for
-each ABI (`arm64-v8a`, `armeabi-v7a`, `x86_64`) and packaged into the AAR.
-`cargo-ndk` is the usual route. That packaging is **not yet part of this
-repo** — it needs an Android SDK to verify, and shipping an untested build
-script for the layer that loads native code seemed worse than saying so
-plainly.
+The Kotlin in the JVM artifact works on Android as-is, but the natives in it do
+not: Android needs its own ABIs (`arm64-v8a`, `armeabi-v7a`, `x86_64`) built
+against the NDK and packaged into an AAR, which is a different artifact from
+the jar published here. `cargo-ndk` is the usual route. That packaging is
+**not yet part of this repo** — it needs an Android SDK to verify, and shipping
+an untested build script for the layer that loads native code seemed worse than
+saying so plainly.
 
 ## Kotlin Multiplatform
 

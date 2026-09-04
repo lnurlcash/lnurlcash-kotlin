@@ -8,3 +8,7 @@ local.properties
 
 # Kotlin tooling scratch (build-failure logs, session state)
 .kotlin/
+
+# Built native cores, one per platform, assembled at release time. Binaries,
+# and reproducible from core.sha, so they are never committed.
+natives/
