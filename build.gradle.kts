@@ -133,7 +133,12 @@ signing {
     // Central rejects an unsigned deployment. The key is only present in the
     // release workflow, so an ordinary local `gradle build` neither needs one
     // nor silently publishes something unsigned.
-    val signingKey = System.getenv("MAVEN_GPG_PRIVATE_KEY")
+    // Blank, not just null. An Actions `env:` bound to a secret that does not
+    // exist is set to the empty string rather than left unset, so a null check
+    // alone turns signing ON with an empty key and fails with "Could not read
+    // PGP secret key" - which reads like a malformed key rather than a missing
+    // one, and makes a dry run impossible before the secrets are set up.
+    val signingKey = System.getenv("MAVEN_GPG_PRIVATE_KEY")?.takeIf { it.isNotBlank() }
     val signingPassword = System.getenv("MAVEN_GPG_PASSPHRASE")
     isRequired = signingKey != null
     if (signingKey != null) {
