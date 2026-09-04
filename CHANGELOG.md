@@ -13,6 +13,34 @@ and the adversarial mock mint.
 
 ### Design notes
 
+**Offline verification is mandatory, and this library insists on it.** LUD-25
+stopped treating a note signature as optional: a service MUST publish
+`mintPubkey` and MUST sign every note a rotate, split or merge mints.
+`fetchNoteInfo` throws for a `withdrawRequest` publishing no valid one, and a
+confirmed-but-unsigned mutation returns the new `MutationOutcome.Unverifiable`.
+`LnurlcashClient(requireSignatures = false)` opts out.
+
+`Unverifiable` is its own case rather than a `Rejected`, which would say the
+operation did not happen, and rather than an `Unknown`, which would say nobody
+can tell. The mutation LANDED: the note exists at the hash the wallet
+disclosed, and `newSecrets` is the only key to it. A caller matching on
+`MutationOutcome` gets a compiler error until it handles that, which is the
+whole point of the sealed interface.
+
+**A mutation whose answer was lost is re-sent, and usually completes.** LUD-25
+gained a "Retrying a mutation" section: a service MUST answer a byte-identical
+rotate, split or merge with the success it already returned. That closes the
+hazard this library's OkHttp dependency was working around, so the client
+re-sends deliberately - `mutationRetries`, default one extra attempt.
+
+Never a melt, which carries `pr`, is paid asynchronously and has no replay
+guarantee; never a definitive refusal, which is the service's considered
+answer; and the same `FfiRequest` goes out each attempt rather than a rebuilt
+one, because the replay is matched on the k1 set, `h`, `h2` and `amount` - a
+regenerated secret would make the retry a different mutation, and a second real
+burn. Transport-level retries stay off regardless: a deliberate retry this
+library counts is a different thing from an invisible one it does not.
+
 **Minting is comment-bound, and the payment preimage is only settlement proof.**
 The draft keyed a fresh note by the invoice's payment preimage until 31 August
 2026, when that fallback was removed outright: a preimage propagates to every

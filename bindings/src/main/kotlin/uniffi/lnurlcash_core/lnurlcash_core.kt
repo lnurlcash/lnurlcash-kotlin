@@ -856,9 +856,9 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_parse_mint_fee(`metadata`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_parse_mutation(`body`: RustBuffer.ByValue,`newSecrets`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    fun uniffi_lnurlcash_core_fn_func_parse_mutation(`body`: RustBuffer.ByValue,`newSecrets`: RustBuffer.ByValue,`kind`: RustBuffer.ByValue,`requireSignatures`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_parse_note_info(`body`: RustBuffer.ByValue,`queriedUrl`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    fun uniffi_lnurlcash_core_fn_func_parse_note_info(`body`: RustBuffer.ByValue,`queriedUrl`: RustBuffer.ByValue,`requireSignatures`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_parse_pay_request(`body`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1170,10 +1170,10 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_parse_mint_fee() != 51423.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_parse_mutation() != 1255.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_parse_mutation() != 60514.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_parse_note_info() != 21105.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_parse_note_info() != 30356.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_parse_pay_request() != 5684.toShort()) {
@@ -1750,6 +1750,42 @@ public object FfiConverterTypeFfiWithdrawInfo: FfiConverterRustBuffer<FfiWithdra
 
 
 
+/**
+ * Which mutation a response is being read as. A melt mints nothing and so
+ * owes no signature; a split mints two notes and owes one over each.
+ */
+
+enum class FfiMutationKind {
+    
+    MELT,
+    ROTATE,
+    SPLIT,
+    MERGE;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiMutationKind: FfiConverterRustBuffer<FfiMutationKind> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiMutationKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiMutationKind) = 4UL
+
+    override fun write(value: FfiMutationKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 
 /**
@@ -1806,10 +1842,12 @@ sealed class LnurlcashException: kotlin.Exception() {
      */
     class NoteSpent(
         
-        val `reason`: kotlin.String
+        val `reason`: kotlin.String, 
+        
+        val `newSecrets`: List<kotlin.String>
         ) : LnurlcashException() {
         override val message
-            get() = "reason=${ `reason` }"
+            get() = "reason=${ `reason` }, newSecrets=${ `newSecrets` }"
     }
     
     /**
@@ -1817,16 +1855,34 @@ sealed class LnurlcashException: kotlin.Exception() {
      */
     class NoteUnknown(
         
-        val `reason`: kotlin.String
+        val `reason`: kotlin.String, 
+        
+        val `newSecrets`: List<kotlin.String>
         ) : LnurlcashException() {
         override val message
-            get() = "reason=${ `reason` }"
+            get() = "reason=${ `reason` }, newSecrets=${ `newSecrets` }"
     }
     
     /**
      * The outcome is UNKNOWN. Preserve any secrets the request carried.
      */
     class Ambiguous(
+        
+        val `detail`: kotlin.String, 
+        
+        val `newSecrets`: List<kotlin.String>
+        ) : LnurlcashException() {
+        override val message
+            get() = "detail=${ `detail` }, newSecrets=${ `newSecrets` }"
+    }
+    
+    /**
+     * The mutation LANDED and the SERVICE returned no signature over it.
+     * LUD-25 requires one, so this is a non-conforming SERVICE - but the note
+     * exists at the hash the wallet disclosed, and `new_secrets` is the only
+     * key to it. Persist them before deciding anything else.
+     */
+    class Unverifiable(
         
         val `detail`: kotlin.String, 
         
@@ -1864,11 +1920,17 @@ public object FfiConverterTypeLnurlcashError : FfiConverterRustBuffer<LnurlcashE
             4 -> LnurlcashException.NotePending()
             5 -> LnurlcashException.NoteSpent(
                 FfiConverterString.read(buf),
+                FfiConverterSequenceString.read(buf),
                 )
             6 -> LnurlcashException.NoteUnknown(
                 FfiConverterString.read(buf),
+                FfiConverterSequenceString.read(buf),
                 )
             7 -> LnurlcashException.Ambiguous(
+                FfiConverterString.read(buf),
+                FfiConverterSequenceString.read(buf),
+                )
+            8 -> LnurlcashException.Unverifiable(
                 FfiConverterString.read(buf),
                 FfiConverterSequenceString.read(buf),
                 )
@@ -1901,13 +1963,21 @@ public object FfiConverterTypeLnurlcashError : FfiConverterRustBuffer<LnurlcashE
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 4UL
                 + FfiConverterString.allocationSize(value.`reason`)
+                + FfiConverterSequenceString.allocationSize(value.`newSecrets`)
             )
             is LnurlcashException.NoteUnknown -> (
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 4UL
                 + FfiConverterString.allocationSize(value.`reason`)
+                + FfiConverterSequenceString.allocationSize(value.`newSecrets`)
             )
             is LnurlcashException.Ambiguous -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`detail`)
+                + FfiConverterSequenceString.allocationSize(value.`newSecrets`)
+            )
+            is LnurlcashException.Unverifiable -> (
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 4UL
                 + FfiConverterString.allocationSize(value.`detail`)
@@ -1940,15 +2010,23 @@ public object FfiConverterTypeLnurlcashError : FfiConverterRustBuffer<LnurlcashE
             is LnurlcashException.NoteSpent -> {
                 buf.putInt(5)
                 FfiConverterString.write(value.`reason`, buf)
+                FfiConverterSequenceString.write(value.`newSecrets`, buf)
                 Unit
             }
             is LnurlcashException.NoteUnknown -> {
                 buf.putInt(6)
                 FfiConverterString.write(value.`reason`, buf)
+                FfiConverterSequenceString.write(value.`newSecrets`, buf)
                 Unit
             }
             is LnurlcashException.Ambiguous -> {
                 buf.putInt(7)
+                FfiConverterString.write(value.`detail`, buf)
+                FfiConverterSequenceString.write(value.`newSecrets`, buf)
+                Unit
+            }
+            is LnurlcashException.Unverifiable -> {
+                buf.putInt(8)
                 FfiConverterString.write(value.`detail`, buf)
                 FfiConverterSequenceString.write(value.`newSecrets`, buf)
                 Unit
@@ -2346,21 +2424,27 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
          * unknown, they come back attached to the error, so nothing can lose them
          * between the call and the catch.
          */
-    @Throws(LnurlcashException::class) fun `parseMutation`(`body`: kotlin.String, `newSecrets`: List<kotlin.String>): FfiMutation {
+    @Throws(LnurlcashException::class) fun `parseMutation`(`body`: kotlin.String, `newSecrets`: List<kotlin.String>, `kind`: FfiMutationKind, `requireSignatures`: kotlin.Boolean): FfiMutation {
             return FfiConverterTypeFfiMutation.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_parse_mutation(
-        FfiConverterString.lower(`body`),FfiConverterSequenceString.lower(`newSecrets`),_status)
+        FfiConverterString.lower(`body`),FfiConverterSequenceString.lower(`newSecrets`),FfiConverterTypeFfiMutationKind.lower(`kind`),FfiConverterBoolean.lower(`requireSignatures`),_status)
 }
     )
     }
     
 
-    @Throws(LnurlcashException::class) fun `parseNoteInfo`(`body`: kotlin.String, `queriedUrl`: kotlin.String): FfiWithdrawInfo {
+        /**
+         * `require_signatures` mirrors [`protocol::Policy`]: leave it true unless the
+         * SERVICE predates LUD-25's mandatory offline verification, because a note
+         * with no key to check it against is one whoever receives it must take on
+         * faith.
+         */
+    @Throws(LnurlcashException::class) fun `parseNoteInfo`(`body`: kotlin.String, `queriedUrl`: kotlin.String, `requireSignatures`: kotlin.Boolean): FfiWithdrawInfo {
             return FfiConverterTypeFfiWithdrawInfo.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_parse_note_info(
-        FfiConverterString.lower(`body`),FfiConverterString.lower(`queriedUrl`),_status)
+        FfiConverterString.lower(`body`),FfiConverterString.lower(`queriedUrl`),FfiConverterBoolean.lower(`requireSignatures`),_status)
 }
     )
     }

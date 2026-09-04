@@ -21,6 +21,7 @@ import uniffi.lnurlcash_core.mintAddressRequest
 import uniffi.lnurlcash_core.noteInfoRequest
 import uniffi.lnurlcash_core.parseInvoice
 import uniffi.lnurlcash_core.parseMintAddress
+import uniffi.lnurlcash_core.FfiMutationKind
 import uniffi.lnurlcash_core.parseMutation
 import uniffi.lnurlcash_core.parseNoteInfo
 import uniffi.lnurlcash_core.parsePayRequest
@@ -52,17 +53,30 @@ import uniffi.lnurlcash_core.verifyRequest
  * @param secretSource where replacement note secrets come from. Substitute for
  *   a hardware RNG - and note that a predictable secret is a note anyone can
  *   spend.
+ * @param requireSignatures insist on the offline verification LUD-25 makes
+ *   mandatory: a service MUST publish `mintPubkey` and MUST sign every note a
+ *   rotate, split or merge mints. Turn it off only to talk to a service that
+ *   predates the requirement, and only knowing the cost - an unsigned note is
+ *   one whoever receives it has to take on faith.
+ * @param mutationRetries how many times to re-send a rotate, split or merge
+ *   whose outcome the transport lost. LUD-25 requires a service to answer a
+ *   byte-identical retry with the original success, so re-sending resolves the
+ *   ambiguity rather than compounding it. Never applied to a melt, which
+ *   carries `pr`, is paid asynchronously and has no replay guarantee. Zero
+ *   gives up on the first ambiguous answer.
  */
 public class LnurlcashClient(
     private val timeout: Duration = Duration.ofSeconds(30),
     private val http: OkHttpClient = defaultHttpClient(timeout),
     private val offline: Boolean = false,
     private val secretSource: () -> String = ::generateNoteSecret,
+    private val requireSignatures: Boolean = true,
+    private val mutationRetries: Int = 1,
 ) {
 
     public companion object {
         /**
-         * An HTTP client that will not retry.
+         * An HTTP client that will not retry behind this library's back.
          *
          * This is the single most important line in this file, and it is worth
          * saying why in full.
@@ -72,17 +86,29 @@ public class LnurlcashClient(
          * a connection fails mid-flight. An LNURLcash mutation is emphatically
          * not idempotent: the first attempt burns the input note.
          *
-         * So when a service applies a rotate and the connection then drops, a
-         * retrying client sends it again, gets "invalid or already spent k1"
-         * for the second attempt, and reports a definitive rejection. The
-         * caller concludes nothing happened and discards the fresh secret -
-         * which was the only copy of the note the service just minted. The
-         * money is gone, and every layer behaved reasonably.
+         * For most of this draft's life that was fatal. A service applied a
+         * rotate, the connection dropped, a retrying client sent it again, got
+         * "invalid or already spent k1" for the second attempt, and reported a
+         * definitive rejection. The caller concluded nothing had happened and
+         * discarded the fresh secret - which was the only copy of the note the
+         * service had just minted. The money was gone, and every layer had
+         * behaved reasonably.
          *
-         * The JDK's own `java.net.http.HttpClient` does exactly this and
-         * offers no way to switch it off, which is why this library depends on
-         * OkHttp rather than using what is already in the JDK. If you supply
-         * your own client, it MUST have retries disabled.
+         * The JDK's own `java.net.http.HttpClient` does exactly that resend
+         * and offers no way to switch it off, which is why this library
+         * depends on OkHttp rather than using what is already in the JDK.
+         *
+         * LUD-25 has since closed the hole at the other end: a service MUST
+         * now answer a byte-identical rotate, split or merge with the success
+         * it already returned. So this client re-sends one whose answer was
+         * lost - deliberately, bounded, and never a melt. See
+         * `mutationRetries`.
+         *
+         * Transport-level retries stay off all the same. A deliberate retry
+         * this library counts is a different thing from an invisible one it
+         * does not, and a service that has not caught up still answers the
+         * second attempt as already spent. If you supply your own client, it
+         * MUST have retries disabled.
          */
         public fun defaultHttpClient(timeout: Duration): OkHttpClient =
             OkHttpClient.Builder()
@@ -103,7 +129,7 @@ public class LnurlcashClient(
      */
     public suspend fun fetchNoteInfo(url: String): NoteInfo {
         val body = get(noteInfoRequest(url))
-        val info = parseNoteInfo(body, url)
+        val info = parseNoteInfo(body, url, requireSignatures)
         return NoteInfo(
             callback = info.callback,
             k1 = info.k1,
@@ -123,7 +149,7 @@ public class LnurlcashClient(
      */
     public suspend fun rotate(callback: String, k1: String): MutationOutcome<RotatedNote> {
         val fresh = secretSource()
-        return mutate({ rotateRequest(callback, k1, fresh) }) { response ->
+        return mutate({ rotateRequest(callback, k1, fresh) }, FfiMutationKind.ROTATE) { response ->
             RotatedNote(k1 = fresh, signature = response.signature)
         }
     }
@@ -141,6 +167,7 @@ public class LnurlcashClient(
         val change = secretSource()
         return mutate(
             { splitRequest(callback, k1s, amountMsat.toULong(), fresh, change) },
+            FfiMutationKind.SPLIT,
         ) { response ->
             SplitNotes(
                 k1 = fresh,
@@ -154,7 +181,7 @@ public class LnurlcashClient(
     /** Burn all the given notes; mint one worth their sum. */
     public suspend fun merge(callback: String, k1s: List<String>): MutationOutcome<RotatedNote> {
         val fresh = secretSource()
-        return mutate({ mergeRequest(callback, k1s, fresh) }) { response ->
+        return mutate({ mergeRequest(callback, k1s, fresh) }, FfiMutationKind.MERGE) { response ->
             RotatedNote(k1 = fresh, signature = response.signature)
         }
     }
@@ -171,7 +198,7 @@ public class LnurlcashClient(
         k1: String,
         invoice: String,
     ): MutationOutcome<MeltReceipt> =
-        mutate({ meltRequest(callback, k1, invoice) }) { response ->
+        mutate({ meltRequest(callback, k1, invoice) }, FfiMutationKind.MELT) { response ->
             MeltReceipt(invoice = response.pr, verifyUrl = response.verify)
         }
 
@@ -345,6 +372,7 @@ public class LnurlcashClient(
      */
     private suspend fun <T> mutate(
         buildRequest: () -> FfiRequest,
+        kind: FfiMutationKind,
         onConfirmed: (uniffi.lnurlcash_core.FfiMutation) -> T,
     ): MutationOutcome<T> {
         // Building can refuse - a callback URL this library will not fetch, a
@@ -356,6 +384,31 @@ public class LnurlcashClient(
         } catch (err: LnurlcashException) {
             return MutationOutcome.Rejected(err)
         }
+        // LUD-25's "Retrying a mutation" is what makes re-sending safe and
+        // what makes it useful: a service MUST answer this exact request with
+        // the success it returned the first time. The SAME FfiRequest goes out
+        // each attempt rather than a rebuilt one - the replay is matched on
+        // the k1 set, h, h2 and amount, so a regenerated secret would make the
+        // retry a different mutation and a second real burn.
+        //
+        // A melt is never re-sent: it carries pr, is paid out asynchronously,
+        // and a second request could ask for a second payment.
+        val attempts = if (kind == FfiMutationKind.MELT) 0 else mutationRetries.coerceAtLeast(0)
+        var lost: MutationOutcome.Unknown? = null
+        for (attempt in 0..attempts) {
+            when (val outcome = attemptMutation(request, kind, onConfirmed)) {
+                is MutationOutcome.Unknown -> lost = outcome
+                else -> return outcome
+            }
+        }
+        return lost!!
+    }
+
+    private suspend fun <T> attemptMutation(
+        request: FfiRequest,
+        kind: FfiMutationKind,
+        onConfirmed: (uniffi.lnurlcash_core.FfiMutation) -> T,
+    ): MutationOutcome<T> {
         val body = try {
             get(request)
         } catch (err: LnurlcashException.RequestRefused) {
@@ -370,12 +423,21 @@ public class LnurlcashClient(
             )
         }
         return try {
-            MutationOutcome.Confirmed(onConfirmed(parseMutation(body, request.newSecrets)))
+            MutationOutcome.Confirmed(
+                onConfirmed(parseMutation(body, request.newSecrets, kind, requireSignatures)),
+            )
         } catch (err: LnurlcashException.Ambiguous) {
             MutationOutcome.Unknown(
                 newSecrets = err.newSecrets,
                 message = err.detail,
                 cause = err,
+            )
+        } catch (err: LnurlcashException.Unverifiable) {
+            // NOT a rejection: the mutation landed, and the note it minted is
+            // real. Its own outcome, carrying the only key to that value.
+            MutationOutcome.Unverifiable(
+                newSecrets = err.newSecrets,
+                message = err.detail,
             )
         } catch (err: LnurlcashException) {
             MutationOutcome.Rejected(err)

@@ -17,6 +17,27 @@ java.net.http.HttpClient does this and cannot be configured out of it. This
 library uses OkHttp with retryOnConnectionFailure(false). A caller-supplied
 client MUST disable retries.
 
+LUD-25 closed this at the service end: a service MUST answer a byte-identical
+retried rotate/split/merge with the success it already returned, sig and all.
+So the client re-sends a mutation whose answer was lost, on purpose and bounded
+(LnurlcashClient(mutationRetries = N), default 1), and a dropped connection
+usually resolves into Confirmed. NEVER a melt: it carries pr, is paid
+asynchronously and has no replay guarantee. Never a definitive refusal. The
+SAME FfiRequest goes out each attempt - the replay is matched on the k1 set, h,
+h2 and amount, so a fresh secret would make it a different mutation and a
+second real burn.
+
+## CRITICAL: offline verification is mandatory
+
+A service MUST publish mintPubkey on every withdrawRequest and MUST return sig
+(and sig2 on a split) from every rotate/split/merge. fetchNoteInfo throws for a
+response with no valid mintPubkey; a confirmed-but-unsigned mutation returns
+MutationOutcome.Unverifiable. That means the mutation LANDED, so the note is
+REAL - persist newSecrets before anything else.
+
+LnurlcashClient(requireSignatures = false) opts out, for a service predating
+the requirement.
+
 ## API
 
 val client = LnurlcashClient(timeout, http, offline, secretSource)
@@ -48,9 +69,12 @@ MutationOutcome.Confirmed(value)                    the service confirmed it
 MutationOutcome.Rejected(error)                     definitive: it did not happen
 MutationOutcome.Unknown(newSecrets, message, cause) MAYBE - persist newSecrets
                                                     FIRST, then probeBurnedNote
+MutationOutcome.Unverifiable(newSecrets, message)   it LANDED and came back
+                                                    unsigned. The note is REAL -
+                                                    persist newSecrets
 
-getOrThrow() collapses Unknown into an exception and loses the secrets. Only
-use it where losing the note would not matter.
+getOrThrow() collapses Unknown and Unverifiable into an exception and loses the
+secrets. Only use it where losing the note would not matter.
 
 ## Rules
 

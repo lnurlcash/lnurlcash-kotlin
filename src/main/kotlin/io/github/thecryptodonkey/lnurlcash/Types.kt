@@ -180,6 +180,25 @@ public sealed interface MutationOutcome<out T> {
         public val message: String,
         public val cause: Throwable? = null,
     ) : MutationOutcome<Nothing>
+
+    /**
+     * The service confirmed the mutation but returned no signature over it.
+     *
+     * LUD-25 makes offline verification mandatory, so this is a non-compliant
+     * service - but the mutation **landed**. Its own case rather than a
+     * [Rejected], which would say the operation did not happen, and rather
+     * than an [Unknown], which would say nobody can tell: the note exists, at
+     * the hash the wallet disclosed, and [newSecrets] is the only key to it
+     * anywhere. **Persist them before anything else**, then decide whether to
+     * keep dealing with a mint that issues notes nobody can check.
+     *
+     * Only ever produced when the client requires signatures, which is the
+     * default.
+     */
+    public data class Unverifiable(
+        public val newSecrets: List<String>,
+        public val message: String,
+    ) : MutationOutcome<Nothing>
 }
 
 /**
@@ -196,6 +215,9 @@ public fun <T> MutationOutcome<T>.getOrThrow(): T = when (this) {
     is MutationOutcome.Unknown -> throw IllegalStateException(
         "$message (fresh secrets: ${newSecrets.size} - these may be the only copy)",
         cause,
+    )
+    is MutationOutcome.Unverifiable -> throw IllegalStateException(
+        "$message (fresh secrets: ${newSecrets.size} - the note EXISTS, these are the only copy)",
     )
 }
 
