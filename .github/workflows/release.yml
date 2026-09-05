@@ -124,8 +124,36 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # Android's ABIs are a different axis from the desktop prefixes: one runner
+  # with the NDK cross-compiles all four, so there is no matrix to spread.
+  android-natives:
+    needs: pin
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: TheCryptoDonkey/lnurlcash-core
+          ref: ${{ needs.pin.outputs.core-sha }}
+          path: core
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+      # The runner image already ships an NDK, so no action installs one and
+      # the release depends on nothing extra to build native code.
+      - name: build the core for every Android ABI
+        run: ./scripts/build-android-core.sh
+        env:
+          LNURLCASH_CORE: ${{ github.workspace }}/core
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-natives
+          path: android-natives
+          if-no-files-found: error
+          retention-days: 1
+
   publish:
-    needs: [pin, natives]
+    needs: [pin, natives, android-natives]
     runs-on: ubuntu-latest
     environment: maven-central
     steps:
@@ -142,6 +170,11 @@ jobs:
         with:
           pattern: native-*
           path: natives
+      - name: collect the Android natives
+        uses: actions/download-artifact@v4
+        with:
+          name: android-natives
+          path: android-natives
       # download-artifact gives each artifact its own directory named after the
       # artifact, which is already `native-<prefix>` - rename to the bare
       # prefix JNA looks for.
@@ -150,7 +183,7 @@ jobs:
           for dir in natives/native-*; do
             mv "$dir" "natives/$(basename "$dir" | sed 's/^native-//')"
           done
-          find natives -type f -exec ls -l {} +
+          find natives android-natives -type f -exec ls -l {} +
 
       # The natives and the checked-in bindings must come from one core commit.
       # This is the gate that proves it: regenerate against the pinned core and

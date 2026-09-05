@@ -25,6 +25,28 @@ Anywhere else — Alpine and its musl libc, FreeBSD, 32-bit anything — build
 [the core](https://github.com/TheCryptoDonkey/lnurlcash-core) yourself and
 point `-Djna.library.path` at it. The Kotlin side is unchanged either way.
 
+On **Android**, depend on the aar instead. Same API, same vectors, ABIs under
+`jni/` where AGP expects them rather than desktop libraries at the root of a
+jar:
+
+```kotlin
+dependencies {
+    implementation("io.github.thecryptodonkey:lnurlcash-kotlin-android:0.1.0")
+}
+```
+
+`arm64-v8a`, `armeabi-v7a`, `x86_64` and `x86`, minSdk 21. Nothing else to
+configure: it brings JNA's Android aar with it, so `libjnidispatch.so` is
+packaged too.
+
+### Kotlin version
+
+Built against Kotlin 2.0 metadata and a Kotlin 2.0 stdlib, deliberately. A
+Kotlin compiler reads metadata up to one minor version above its own, so a
+library built with 2.4 cannot be consumed by anything below 2.3 — which
+includes the Kotlin 2.2 built into AGP 9. Anything from Kotlin 2.0 upward can
+use this, and a consumer on a later Kotlin keeps their own stdlib.
+
 ## Read this before you use any LNURLcash library on the JVM
 
 Every LNURLcash mutation — rotate, split, merge, melt — is an HTTP **GET**.
@@ -167,17 +189,28 @@ Releases are their own thing; see [RELEASING.md](RELEASING.md).
 
 ## Android
 
-The Kotlin in the JVM artifact works on Android as-is, but the natives in it do
-not: Android needs its own ABIs (`arm64-v8a`, `armeabi-v7a`, `x86_64`) built
-against the NDK and packaged into an AAR, which is a different artifact from
-the jar published here. `cargo-ndk` is the usual route. That packaging is
-**not yet part of this repo** — it needs an Android SDK to verify, and shipping
-an untested build script for the layer that loads native code seemed worse than
-saying so plainly.
+`lnurlcash-kotlin-android` is a real aar: the same Kotlin, plus the core built
+against the NDK for four ABIs under `jni/`. It is a separate artifact rather
+than a variant of the jar because the two share no native code, and AGP would
+otherwise package the desktop `.so`, `.dylib` and `.dll` into every APK as dead
+java resources.
+
+The aar is assembled by hand rather than by the Android Gradle Plugin, which
+keeps this build free of the Android SDK. Nothing about that is correct by
+construction, so `android-verify/` is a real consumer project that resolves the
+aar by coordinate and runs the FFI on an emulator against the shared
+conformance vectors. It runs in ci on every change. A library whose native
+loading is only inspected, never executed, is a library nobody has tested.
+
+```bash
+./scripts/build-android-core.sh            # four ABIs, needs the NDK
+gradle :lnurlcash-kotlin-android:publishToMavenLocal
+(cd android-verify && ./gradlew connectedDebugAndroidTest)   # needs a device
+```
 
 ## Kotlin Multiplatform
 
-A UniFFI AAR does not fit KMP cleanly. If pure-KMP support is ever needed, the
+A UniFFI aar does not fit KMP cleanly. If pure-KMP support is ever needed, the
 conformance vectors are what would make a hand-written implementation
 acceptable, and the public API here would not change.
 

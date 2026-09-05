@@ -17,6 +17,11 @@ repositories {
 }
 
 dependencies {
+    // The oldest stdlib this compiles against, not the newest available. A
+    // consumer on a later Kotlin resolves to their own; a consumer on an
+    // earlier one is not forced to upgrade. kotlinx-coroutines 1.9.0 already
+    // declares this exact floor.
+    api("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     // the generated bindings, which load the Rust core through JNA
     api(project(":lnurlcash-kotlin-bindings"))
@@ -39,6 +44,15 @@ kotlin {
         // 17 is the floor Android tooling is comfortable with, and emitting it
         // needs no JDK 17 installed - only a compiler new enough to target it
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // What a CONSUMER's compiler must be able to read, not what compiles
+        // this. A Kotlin compiler reads metadata up to one minor above its own
+        // version, so building with 2.4 stamps mv=2.4.0 and locks out
+        // everything below 2.3 - including AGP 9's built-in Kotlin 2.2, which
+        // is what most Android projects will be on. Pinning the language
+        // version stamps mv=2.0.0 instead and costs nothing here: this code
+        // uses no language feature newer than 2.0.
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
     }
 }
 

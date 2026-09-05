@@ -15,6 +15,7 @@ repositories {
 }
 
 dependencies {
+    api("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
     api("net.java.dev.jna:jna:5.15.0")
 }
 
@@ -52,6 +53,10 @@ tasks.jar {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // These classes are published too, so they carry the same consumer
+        // floor as the facade. See the note in the root build file.
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
     }
 }
 

@@ -4,11 +4,15 @@ Two coordinates go to Maven Central together:
 
 | Coordinate | What it is |
 |---|---|
-| `io.github.thecryptodonkey:lnurlcash-kotlin` | the library you depend on |
-| `io.github.thecryptodonkey:lnurlcash-kotlin-bindings` | generated UniFFI bindings, and the native core compiled for six platforms |
+| `io.github.thecryptodonkey:lnurlcash-kotlin` | the library a JVM project depends on |
+| `io.github.thecryptodonkey:lnurlcash-kotlin-bindings` | generated UniFFI bindings, and the native core compiled for six desktop platforms |
+| `io.github.thecryptodonkey:lnurlcash-kotlin-android` | an aar: the same Kotlin, plus the core for four Android ABIs under `jni/` |
 
-Only the first is meant to be named in anyone's build file; the second arrives
-as a transitive dependency. They are separate because the bindings are machine
+A JVM project names the first and gets the second transitively; an Android
+project names the third and gets nothing else. The android artifact is
+self-contained rather than depending on the jar, because the jar's desktop
+natives would otherwise be packaged into every APK as dead java resources -
+the same reason JNA publishes a jar and an aar with overlapping classes. They are separate because the bindings are machine
 written and cannot satisfy the explicit-API rules the hand-written wrapper is
 held to, and folding them into one jar would mean stripping a project
 dependency out of both the POM and the Gradle module metadata by hand. Two
@@ -136,6 +140,19 @@ loaded from inside the jar rather than from a sibling checkout.
 under `build/staging-deploy` without uploading anything, which is the fastest
 way to look at what the POMs actually say.
 
+## The Android artifact is verified by running it
+
+The aar is assembled by a Zip task, not by the Android Gradle Plugin, which is
+what keeps this build free of the Android SDK. Nothing about that is correct by
+construction, so `android-verify/` is a real consumer project: it resolves the
+aar by coordinate through AGP, and its instrumented tests call the FFI on an
+emulator against the shared conformance vectors. ci runs it on every change,
+and also asserts that all four ABIs reached the APK.
+
+That project pins its own Gradle through a wrapper. AGP 8 relies on a Gradle
+internal API removed in 9.6, and AGP 9's built-in Kotlin is 2.2, so neither the
+library's Gradle nor its Kotlin can be reused there.
+
 ## Rehearsing it, without publishing anything
 
 The six cross-platform builds should not be attempted for the first time during
@@ -156,6 +173,6 @@ hundred pages describing `FfiConverterUInt64`, which helps nobody; Central only
 requires the artifact to exist. `lnurlcash-kotlin` itself ships real Dokka
 javadoc.
 
-Android is not covered. The Kotlin works there, but the natives in this jar do
-not: Android needs its own ABIs built against the NDK and packaged into an AAR,
-which is a different artifact and needs an SDK to verify.
+Kotlin Multiplatform is not covered, and a UniFFI aar does not fit it cleanly.
+The conformance vectors are what would make a hand-written implementation
+acceptable if it is ever wanted; the public API would not change.

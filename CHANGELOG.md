@@ -34,6 +34,21 @@ carry breaking changes; pin an exact version.
 - Real Dokka javadoc for `lnurlcash-kotlin`. Central only requires a javadoc
   artifact to exist, and an empty one helps nobody when `explicitApi()` has
   already forced the public API to be documented.
+- **Android.** `lnurlcash-kotlin-android` is an aar carrying the core built
+  against the NDK for `arm64-v8a`, `armeabi-v7a`, `x86_64` and `x86`, minSdk
+  21. Separate from the jar because the two share no native code, and AGP would
+  package the desktop `.so`/`.dylib`/`.dll` into every APK as dead java
+  resources. It is assembled by a Zip task rather than by AGP, so this build
+  still needs no Android SDK, and `android-verify/` proves the result by
+  resolving it through AGP and running the FFI on an emulator against the
+  conformance vectors.
+- Built against Kotlin 2.0 metadata and a Kotlin 2.0 stdlib rather than the
+  2.4.10 that compiles it. A Kotlin compiler reads metadata at most one minor
+  above its own, so 2.4 metadata locked out every consumer below 2.3 —
+  including the Kotlin 2.2 built into AGP 9, which is where most Android
+  projects will be. The published stdlib dependency was doing the same damage
+  from the other direction: Gradle resolves to the highest version, so a 2.4.10
+  stdlib dragged consumers up whether or not they could read it.
 - The release can be dry run: it builds all six natives and assembles both
   modules without uploading, so the cross-platform builds are not attempted for
   the first time during a release that cannot be taken back. It needs none of

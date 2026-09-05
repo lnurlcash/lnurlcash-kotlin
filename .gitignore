@@ -3,6 +3,9 @@ build/
 *.class
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
+# The verification project pins its own Gradle, because AGP 8 cannot run on the
+# Gradle the library builds with. Its wrapper jar is part of that pin.
+!android-verify/gradle/wrapper/gradle-wrapper.jar
 local.properties
 .DS_Store
 
@@ -12,3 +15,6 @@ local.properties
 # Built native cores, one per platform, assembled at release time. Binaries,
 # and reproducible from core.sha, so they are never committed.
 natives/
+
+# Android natives, built per ABI at release time. Binaries, so never committed.
+android-natives/
