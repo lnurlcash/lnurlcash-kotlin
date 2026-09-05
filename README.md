@@ -17,7 +17,7 @@ there is nothing to build and no `jna.library.path` to set:
 
 | | x86-64 | aarch64 |
 |---|---|---|
-| Linux (glibc 2.35+) | yes | yes |
+| Linux (glibc 2.34+) | yes | yes |
 | macOS | yes | yes |
 | Windows | yes | yes |
 

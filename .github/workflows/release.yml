@@ -59,7 +59,9 @@ jobs:
         include:
           # glibc is forward compatible and not backward compatible, so the
           # oldest runner available sets the floor for every consumer. 22.04
-          # is glibc 2.35.
+          # ships glibc 2.35, and the binaries it produces reference nothing
+          # newer than GLIBC_2.34 - which is exactly the RHEL 9 line, so do not
+          # "tidy" this to a newer runner without re-reading the symbols.
           - runner: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             prefix: linux-x86-64
