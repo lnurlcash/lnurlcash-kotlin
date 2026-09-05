@@ -13,3 +13,11 @@ rootProject.name = "lnurlcash-kotlin"
 // after the artifact removes the chance of that ever drifting apart.
 include(":lnurlcash-kotlin-bindings")
 project(":lnurlcash-kotlin-bindings").projectDir = file("bindings")
+
+// Android gets its own artifact rather than a variant of the jar, because the
+// two share no native code at all: the jar carries desktop .so/.dylib/.dll at
+// its root, which AGP would package into every APK as dead java resources, and
+// Android needs its ABIs under jni/ instead. JNA itself publishes a jar and an
+// aar with overlapping classes for exactly this reason.
+include(":lnurlcash-kotlin-android")
+project(":lnurlcash-kotlin-android").projectDir = file("android")
