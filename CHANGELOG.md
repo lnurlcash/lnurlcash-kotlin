@@ -5,6 +5,22 @@ carry breaking changes; pin an exact version.
 
 ## 0.1.0 — unreleased
 
+### Three more fields off a mint address
+
+`MintAddress` gains `nodeUris`, `sunsetDate` and `outstandingNotesMsat`, which
+the reference mint publishes and `lnurlcash-core` now reads. `core.sha` moves
+to that commit and `bindings/` is regenerated against it in the same change.
+
+- `nodeUris` — every address the service's node announces. `nodeUri` is the
+  first of them; a node behind Tor as well as clearnet has more. Null rather
+  than an empty list when there are none.
+- `sunsetDate` — the day the service plans to close, ISO-8601. Validated in the
+  core as a real calendar day and dropped otherwise. A plain `String`, not a
+  date type: nothing enforces or verifies it, so it is a prompt to move notes
+  rather than a deadline to compute against.
+- `outstandingNotesMsat` — what the service says it owes. `0` and null are
+  different answers.
+
 ### Published to Maven Central
 
 - The jar now carries the native core for linux-x86-64, linux-aarch64,
