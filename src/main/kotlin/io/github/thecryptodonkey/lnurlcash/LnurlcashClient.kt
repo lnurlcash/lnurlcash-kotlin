@@ -351,6 +351,9 @@ public class LnurlcashClient(
             nodeCapacityMsat = info.nodeCapacityMsat?.toLong(),
             nodeNumChannels = info.nodeNumChannels?.toLong(),
             nodeNumPeers = info.nodeNumPeers?.toLong(),
+            nodeUris = info.nodeUris,
+            sunsetDate = info.sunsetDate,
+            outstandingNotesMsat = info.outstandingNotesMsat?.toLong(),
         )
     }
 

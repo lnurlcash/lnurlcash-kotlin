@@ -131,6 +131,30 @@ public data class MintAddress(
     public val nodeCapacityMsat: Long?,
     public val nodeNumChannels: Long?,
     public val nodeNumPeers: Long?,
+    /**
+     * Every address the service's node announces, each already
+     * `node_key@host:port`. [nodeUri] is the first of them; a node behind Tor
+     * as well as clearnet has more, and a caller that can only reach the other
+     * one needs the whole list. Null, never an empty list, when the service
+     * announces nothing.
+     */
+    public val nodeUris: List<String>?,
+    /**
+     * The day the service plans to close, ISO-8601 (`"2026-12-31"`). Advance
+     * warning while there is still time to spend, deliberately not the same
+     * thing as a mint that has already stopped minting. Nothing enforces it
+     * and nothing verifies it, so it is a prompt to move notes, never a
+     * deadline to compute against - and it is a plain string rather than a
+     * date type for exactly that reason.
+     */
+    public val sunsetDate: String?,
+    /**
+     * What the service says it owes, msat: every note it has issued and not
+     * burned. Its own claim about its own database, with nothing to check it
+     * against, so read it next to what the node holds rather than on its own.
+     * `0` and null are different answers.
+     */
+    public val outstandingNotesMsat: Long?,
 )
 
 /** What a probe learned about a note whose fate was uncertain. */

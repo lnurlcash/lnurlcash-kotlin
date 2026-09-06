@@ -10,6 +10,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import uniffi.lnurlcash_core.LnurlcashException
+import uniffi.lnurlcash_core.parseMintAddress
 
 /**
  * Runs against the mock mint. The happy paths matter, but the adversarial modes
@@ -280,6 +281,67 @@ class ProtocolTest {
         assertEquals(500_000_000L, address.nodeCapacityMsat)
         assertEquals(4L, address.nodeNumChannels)
         assertEquals(6L, address.nodeNumPeers)
+    }
+
+    // The three fields the reference mint publishes that the mock does not.
+    // Driven through the FFI directly rather than over HTTP: what is unique to
+    // this repo is the boundary - a list, an optional string and an optional
+    // u64 crossing into Kotlin - and a round trip against a mock that never
+    // sends them would grade none of it.
+
+    private fun mintAddressBody(extra: String): String =
+        """{"tag":"withdrawRequest","callback":"https://mint.example/w/cb",
+           "payLink":"https://mint.example/.well-known/lnurlp/mint",
+           "minWithdrawable":1000,"maxWithdrawable":100000000$extra}"""
+
+    @Test
+    fun `reads every address the node announces`() {
+        val clearnet = "02aa@2.29.14.244:9735"
+        val onion = "02aa@abcdefghijklmnop.onion:9735"
+        val info = parseMintAddress(
+            mintAddressBody(""","nodeUri":"$clearnet","nodeUris":["$clearnet","$onion"]"""),
+        )
+        assertEquals(listOf(clearnet, onion), info.nodeUris)
+        // the singular field is unchanged and still the first address
+        assertEquals(clearnet, info.nodeUri)
+    }
+
+    @Test
+    fun `an announced nothing is null, not an empty list`() {
+        assertNull(parseMintAddress(mintAddressBody("")).nodeUris)
+        assertNull(parseMintAddress(mintAddressBody(""","nodeUris":[]""")).nodeUris)
+        assertEquals(
+            listOf("a"),
+            parseMintAddress(mintAddressBody(""","nodeUris":[1,"a","",null]""")).nodeUris,
+        )
+    }
+
+    @Test
+    fun `a closing date is a calendar day or nothing`() {
+        assertEquals(
+            "2026-12-31",
+            parseMintAddress(mintAddressBody(""","sunsetDate":"2026-12-31"""")).sunsetDate,
+        )
+        assertNull(parseMintAddress(mintAddressBody("")).sunsetDate)
+        // A wallet showing a holder a closing date off an unchecked string is
+        // worse than showing nothing. February never has 31 days.
+        for (bad in listOf("\"31/12/2026\"", "\"2026-12-31T09:00:00Z\"", "\"2026-02-31\"", "20261231")) {
+            assertNull(parseMintAddress(mintAddressBody(""","sunsetDate":$bad""")).sunsetDate)
+        }
+    }
+
+    @Test
+    fun `what a mint says it owes keeps zero distinct from silence`() {
+        assertEquals(
+            48_000UL,
+            parseMintAddress(mintAddressBody(""","outstandingNotesMsat":48000""")).outstandingNotesMsat,
+        )
+        // "owes nothing" and "will not say" are different things to know
+        assertEquals(
+            0UL,
+            parseMintAddress(mintAddressBody(""","outstandingNotesMsat":0""")).outstandingNotesMsat,
+        )
+        assertNull(parseMintAddress(mintAddressBody("")).outstandingNotesMsat)
     }
 
     // ---- ambiguous outcomes ----

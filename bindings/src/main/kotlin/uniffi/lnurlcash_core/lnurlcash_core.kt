@@ -1509,7 +1509,10 @@ data class FfiMintAddress (
     var `nodeColor`: kotlin.String?, 
     var `nodeCapacityMsat`: kotlin.ULong?, 
     var `nodeNumChannels`: kotlin.ULong?, 
-    var `nodeNumPeers`: kotlin.ULong?
+    var `nodeNumPeers`: kotlin.ULong?, 
+    var `nodeUris`: List<kotlin.String>?, 
+    var `sunsetDate`: kotlin.String?, 
+    var `outstandingNotesMsat`: kotlin.ULong?
 ) {
     
     companion object
@@ -1532,6 +1535,9 @@ public object FfiConverterTypeFfiMintAddress: FfiConverterRustBuffer<FfiMintAddr
             FfiConverterOptionalULong.read(buf),
             FfiConverterOptionalULong.read(buf),
             FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalSequenceString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalULong.read(buf),
         )
     }
 
@@ -1546,7 +1552,10 @@ public object FfiConverterTypeFfiMintAddress: FfiConverterRustBuffer<FfiMintAddr
             FfiConverterOptionalString.allocationSize(value.`nodeColor`) +
             FfiConverterOptionalULong.allocationSize(value.`nodeCapacityMsat`) +
             FfiConverterOptionalULong.allocationSize(value.`nodeNumChannels`) +
-            FfiConverterOptionalULong.allocationSize(value.`nodeNumPeers`)
+            FfiConverterOptionalULong.allocationSize(value.`nodeNumPeers`) +
+            FfiConverterOptionalSequenceString.allocationSize(value.`nodeUris`) +
+            FfiConverterOptionalString.allocationSize(value.`sunsetDate`) +
+            FfiConverterOptionalULong.allocationSize(value.`outstandingNotesMsat`)
     )
 
     override fun write(value: FfiMintAddress, buf: ByteBuffer) {
@@ -1561,6 +1570,9 @@ public object FfiConverterTypeFfiMintAddress: FfiConverterRustBuffer<FfiMintAddr
             FfiConverterOptionalULong.write(value.`nodeCapacityMsat`, buf)
             FfiConverterOptionalULong.write(value.`nodeNumChannels`, buf)
             FfiConverterOptionalULong.write(value.`nodeNumPeers`, buf)
+            FfiConverterOptionalSequenceString.write(value.`nodeUris`, buf)
+            FfiConverterOptionalString.write(value.`sunsetDate`, buf)
+            FfiConverterOptionalULong.write(value.`outstandingNotesMsat`, buf)
     }
 }
 
@@ -2223,6 +2235,38 @@ public object FfiConverterOptionalTypeFfiMintFee: FfiConverterRustBuffer<FfiMint
         } else {
             buf.put(1)
             FfiConverterTypeFfiMintFee.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceString: FfiConverterRustBuffer<List<kotlin.String>?> {
+    override fun read(buf: ByteBuffer): List<kotlin.String>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceString.read(buf)
+    }
+
+    override fun allocationSize(value: List<kotlin.String>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceString.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<kotlin.String>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceString.write(value, buf)
         }
     }
 }
