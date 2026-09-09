@@ -99,7 +99,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: TheCryptoDonkey/lnurlcash-core
+          repository: lnurlcash/lnurlcash-core
           ref: ${{ needs.pin.outputs.core-sha }}
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -133,7 +133,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          repository: TheCryptoDonkey/lnurlcash-core
+          repository: lnurlcash/lnurlcash-core
           ref: ${{ needs.pin.outputs.core-sha }}
           path: core
       - uses: dtolnay/rust-toolchain@stable
@@ -190,7 +190,7 @@ jobs:
       # fail on any difference.
       - uses: actions/checkout@v4
         with:
-          repository: TheCryptoDonkey/lnurlcash-core
+          repository: lnurlcash/lnurlcash-core
           ref: ${{ needs.pin.outputs.core-sha }}
           path: core
       - name: bindings match the pinned core

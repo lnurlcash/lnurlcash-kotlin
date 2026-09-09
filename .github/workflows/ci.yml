@@ -29,11 +29,11 @@ jobs:
       # LNURLCASH_CORE; the test task reads LNURLCASH_CONFORMANCE).
       - uses: actions/checkout@v4
         with:
-          repository: TheCryptoDonkey/lnurlcash-core
+          repository: lnurlcash/lnurlcash-core
           path: core
       - uses: actions/checkout@v4
         with:
-          repository: TheCryptoDonkey/lnurlcash-conformance
+          repository: lnurlcash/lnurlcash-conformance
           path: conformance
       # the mock mint is a Node process with its own dependencies - without
       # these the adversarial suite cannot start it
@@ -75,7 +75,7 @@ jobs:
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
       - uses: actions/checkout@v4
         with:
-          repository: TheCryptoDonkey/lnurlcash-core
+          repository: lnurlcash/lnurlcash-core
           path: core
 
       - name: build the core for every Android ABI
