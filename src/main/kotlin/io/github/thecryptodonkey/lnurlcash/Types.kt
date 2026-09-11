@@ -47,6 +47,38 @@ public data class MeltReceipt(
     public val verifyUrl: String?,
 )
 
+/**
+ * A rotate or merge into an output the caller named: a hash, or a Part 2
+ * `cp1`.
+ *
+ * There is no secret here, because the caller held it before the request went
+ * out and this library never saw it. [signature] is the mint's certificate
+ * over the new note: check it with [verifyNoteSignatureHash] against the
+ * output (the hash, or [decodeCp1] of the `cp1`), or with [verifyNoteSignature]
+ * against the note's k1 or `ck1`.
+ */
+public data class HashedNote(
+    public val signature: String?,
+)
+
+/** The two notes a split into caller-named outputs produced, in output order. */
+public data class HashedSplitNotes(
+    public val signature: String?,
+    public val changeSignature: String?,
+)
+
+/**
+ * A watch-only Part 2 branch: its x-only public key and chain code, both hex.
+ *
+ * Spends nothing, but whoever holds it can derive every note key on the branch
+ * with [deriveNotePubkey] and ask a mint about each one. [encodeCx1] turns it
+ * into the `cx1` string a mint is handed.
+ */
+public data class Cx1(
+    public val pubkeyXOnly: String,
+    public val chainCode: String,
+)
+
 /** A note that was settled against what the service says it is really worth. */
 public data class SettledNote(
     public val k1: String,
@@ -198,6 +230,10 @@ public sealed interface MutationOutcome<out T> {
      * [LnurlcashClient.probeBurnedNote] on one of the inputs to find out what
      * happened. Order matches the operation: `[rotated]` for a rotate,
      * `[splitOff, change]` for a split, `[merged]` for a merge.
+     *
+     * Empty for [LnurlcashClient.rotateWithHash] and its siblings. Their
+     * outputs were named by the caller, who held what stands behind them
+     * before the request went out, so there is nothing here to carry.
      */
     public data class Unknown(
         public val newSecrets: List<String>,
@@ -217,7 +253,8 @@ public sealed interface MutationOutcome<out T> {
      * keep dealing with a mint that issues notes nobody can check.
      *
      * Only ever produced when the client requires signatures, which is the
-     * default.
+     * default. [newSecrets] is empty for a mutation into outputs the caller
+     * named, for the same reason as on [Unknown].
      */
     public data class Unverifiable(
         public val newSecrets: List<String>,

@@ -5,6 +5,56 @@ carry breaking changes; pin an exact version.
 
 ## 0.1.0 — unreleased
 
+### LUD-25 Part 2: notes keyed by a public key
+
+`core.sha` moves to the `lnurlcash-core` commit that adds Part 2, and
+`bindings/` is regenerated against it in the same change. The facade exposes
+all of it, under the TypeScript kit's names in Kotlin casing, hex in and hex
+out as everywhere else.
+
+- The four bech32m strings: `encodeCp1`/`decodeCp1`/`isCp1` (a note's x-only
+  key), the same for `Ck1` (the ownership signature that spends it), `Cs1` (the
+  mint's certificate) and `Cx1` (a watch-only branch, decoded to the new `Cx1`
+  data class). Decoders return null for anything that is not exactly their
+  type, and never throw.
+- `deriveNotePubkey` (watch-only, from a `cx1`) and `deriveNoteSecretKey`, with
+  `index` any `UInt`, never hardened.
+- `signNoteOwnership` and `recoverNoteOwnershipPubkey`.
+- `noteIdOf` and `noteLookupOf`: the id a mint files either kind of note under,
+  and what to look one up by without disclosing it. Compare notes by the
+  first, never by k1.
+- `deriveCashAddressNode` and `cashNodeToCx1`: the reference wallet's
+  `m/139'/1'/d1..d4` branch, not the draft text's `m/139'/d1..d4`.
+- `deriveNostrCashSeed` and `deriveNostrAddressNode`: an extension, not LUD-25,
+  rooting a branch in a Nostr identity key.
+- `deriveCashMaster` and `deriveCashChild`, for walking a path this library
+  does not name.
+- `verifyNoteSignatureHash`, checking a certificate by the note's key or hash
+  for a caller that holds the id but not the k1. `verifyNoteSignature` now
+  takes a `ck1` as the k1 and a `cs1` as the signature.
+
+On the wire a `ck1` goes anywhere a k1 does, including `resolveNoteInput`,
+`fetchNoteInfo` and `melt`. A `cp1` goes anywhere an output does, through four
+new client calls that take an output the caller already holds:
+`rotateWithHash`, `splitWithHash` and `mergeWithHash` send it as `p1`/`p2` where
+a hash keeps `h`/`h2`, and `requestMintInvoiceWithHash` sends it as the comment
+alone. `buildNoteInfoUrlByHash` sends a `cp1` as `p`. None of the `WithHash`
+calls ever sees the secret behind its output, so an `Unknown` or
+`Unverifiable` from one carries no secrets: the caller has to have saved it
+first.
+
+`fetchNoteInfo` compares the service's echoed k1 as the note it names rather
+than as a string. One note has more than one valid `ck1` (anyone can flip one
+to its high-S twin), so a service echoing a different `ck1` that recovers to
+the same key has named the same note; one naming any other note is still
+refused.
+
+Graded against `lnurlcash-conformance` 0.9.0, now the pinned ref in ci, through
+the facade so the FFI boundary is graded too: every field of `part2.json` (eight
+branches of seven notes, the four certificates and the valid and invalid
+strings), each `ck1` recovered to its note key and each `cs1` to the mint's,
+and all four `nostr-seed.json` cases.
+
 ### Three more fields off a mint address
 
 `MintAddress` gains `nodeUris`, `sunsetDate` and `outstandingNotesMsat`, which

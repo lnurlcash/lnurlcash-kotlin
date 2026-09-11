@@ -131,6 +131,58 @@ is the whole point.
 
 `getOrThrow()` exists for when you genuinely do not care, and says so.
 
+## Notes keyed by a public key (LUD-25 Part 2)
+
+A Part 2 note swaps the hash for a key pair. The wallet keeps `sk`, and the
+mint only ever sees `pk`, written `cp1...`. To spend the note you hand over
+`ck1...`, a recoverable signature by `sk` over the fixed message `LNURLcash`,
+and the mint recovers `pk` from it to find the note. The mint's certificate,
+`cs1...`, is the signature mints already make, over `hex(pk)` instead of a
+hash. So a recipient can check a note offline with nothing but its `ck1` and
+`cs1`.
+
+```kotlin
+val node = deriveCashAddressNode(deriveCashRoot(seedHex), "mint.example") // bearer material
+val branch = cashNodeToCx1(node)
+val cx1 = encodeCx1(branch.pubkeyXOnly, branch.chainCode)    // watch-only
+
+val pk = deriveNotePubkey(branch.pubkeyXOnly, branch.chainCode, i) // what a watcher derives
+val sk = deriveNoteSecretKey(node.take(64), node.drop(64), i)
+val ck1 = encodeCk1(signNoteOwnership(sk))                   // the bearer secret
+
+// persist i (or sk) FIRST: this library never sees what stands behind an output
+client.rotateWithHash(info.callback, oldK1, encodeCp1(pk))
+
+verifyNoteSignature(ck1, amountMsat, cs1, mintPubkey)        // offline
+```
+
+The wire takes both kinds. A `ck1` goes anywhere a k1 does. A `cp1` goes
+anywhere an output does: `requestMintInvoiceWithHash` sends it as the comment
+alone, `rotateWithHash`, `splitWithHash` and `mergeWithHash` send it as
+`p1`/`p2` where a hash keeps `h`/`h2`, and `buildNoteInfoUrlByHash` sends it as
+`p` where a hash keeps `h`.
+
+`noteIdOf(k1)` is the id a mint files either kind under, and `noteLookupOf(k1)`
+what to look a note up by without disclosing it. One note has more than one
+valid `ck1` (anyone can flip one to its high-S twin), so compare notes by id,
+never by k1. `fetchNoteInfo` compares a mint's echo that way too.
+
+Three things worth knowing:
+
+- **The `WithHash` mutations carry no secrets.** They never see the key behind
+  the output, so an `Unknown` or `Unverifiable` from one hands nothing back.
+  Save it before the call.
+- **The branch path follows the reference wallet, not the draft's text.** It is
+  `m/139'/1'/d1/d2/d3/d4`. The text says `m/139'/d1..d4`, which is the Part 1
+  ladder's own node, and a wallet following it finds none of lnurl-wallet's
+  notes.
+- **A `cx1` links every note on its branch.** It spends nothing, but whoever
+  holds it can list every key on the branch and ask the mint about each one.
+
+`deriveNostrAddressNode(secretKey, host)` roots a branch in a Nostr identity
+key, for a holder with no BIP-39 words. That one is an extension, not LUD-25; a
+mint sees an ordinary `cx1` either way.
+
 ## What is in Rust and what is in Kotlin
 
 The money-critical logic — request building, response classification, signature

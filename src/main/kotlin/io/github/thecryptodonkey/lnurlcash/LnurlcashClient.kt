@@ -15,8 +15,10 @@ import uniffi.lnurlcash_core.FfiRequest
 import uniffi.lnurlcash_core.LnurlcashException
 import uniffi.lnurlcash_core.invoiceRequest
 import uniffi.lnurlcash_core.mintInvoiceRequest
+import uniffi.lnurlcash_core.mintInvoiceRequestWithHash
 import uniffi.lnurlcash_core.meltRequest
 import uniffi.lnurlcash_core.mergeRequest
+import uniffi.lnurlcash_core.mergeRequestWithHash
 import uniffi.lnurlcash_core.mintAddressRequest
 import uniffi.lnurlcash_core.noteInfoRequest
 import uniffi.lnurlcash_core.parseInvoice
@@ -28,7 +30,9 @@ import uniffi.lnurlcash_core.parsePayRequest
 import uniffi.lnurlcash_core.parseVerify
 import uniffi.lnurlcash_core.payRequestRequest
 import uniffi.lnurlcash_core.rotateRequest
+import uniffi.lnurlcash_core.rotateRequestWithHash
 import uniffi.lnurlcash_core.splitRequest
+import uniffi.lnurlcash_core.splitRequestWithHash
 import uniffi.lnurlcash_core.verifyRequest
 
 /**
@@ -126,6 +130,12 @@ public class LnurlcashClient(
      *
      * This necessarily puts the secret on the wire, so a caller still holding
      * the note afterwards should [rotate] it.
+     *
+     * The URL's k1 may be a Part 2 `ck1`. Whatever k1 the service echoes back
+     * is compared as the note it names, not as a string: one Part 2 note has
+     * more than one valid `ck1`, so a service echoing another spelling of the
+     * queried note has named the same note, while one naming any other note is
+     * refused as a [LnurlcashException.Protocol].
      */
     public suspend fun fetchNoteInfo(url: String): NoteInfo {
         val body = get(noteInfoRequest(url))
@@ -185,6 +195,63 @@ public class LnurlcashClient(
             RotatedNote(k1 = fresh, signature = response.signature)
         }
     }
+
+    // ---- into outputs the caller already holds ----
+    //
+    // The same three mutations, naming the output rather than generating it.
+    // This is how a note moves to a Part 2 key, and what a hardware wallet
+    // drives: its own RNG or key tree produces the output, and whatever stands
+    // behind it never enters this process.
+    //
+    // That is also the catch. This library never saw the secret, so nothing
+    // here can hand it back: MutationOutcome.Unknown and Unverifiable carry no
+    // secrets from these. Persist the key or secret behind every output BEFORE
+    // calling, exactly as the generating variants do for you.
+    //
+    // An output is a hash, sent as `h` (`h2` for a split's change), or a Part 2
+    // `cp1`, sent as `p1` (`p2`). LUD-25 renamed the parameters; a hash keeps
+    // the old names, which every mint that ever took one accepts, and a key
+    // goes under the new ones, which only a Part 2 mint takes anyway. Decided
+    // per value, never by a version flag, the same rule lnurl-wallet follows.
+    // An input k1 may be a Part 1 secret or a Part 2 `ck1`; the service tells
+    // them apart by shape.
+
+    /**
+     * Burn [k1] and mint a note of the same value to [h]: a hash, or a Part 2
+     * `cp1`. Persist whatever stands behind [h] before calling.
+     */
+    public suspend fun rotateWithHash(callback: String, k1: String, h: String): MutationOutcome<HashedNote> =
+        mutate({ rotateRequestWithHash(callback, k1, h) }, FfiMutationKind.ROTATE) { response ->
+            HashedNote(signature = response.signature)
+        }
+
+    /**
+     * Burn one or many notes; mint one worth [amountMsat] to [h] and one
+     * carrying the remainder to [h2]. Each output is a hash or a Part 2 `cp1`,
+     * independently. Persist what stands behind both before calling.
+     */
+    public suspend fun splitWithHash(
+        callback: String,
+        k1s: List<String>,
+        amountMsat: Long,
+        h: String,
+        h2: String,
+    ): MutationOutcome<HashedSplitNotes> =
+        mutate(
+            { splitRequestWithHash(callback, k1s, amountMsat.toULong(), h, h2) },
+            FfiMutationKind.SPLIT,
+        ) { response ->
+            HashedSplitNotes(signature = response.signature, changeSignature = response.changeSignature)
+        }
+
+    /**
+     * Burn all the given notes, of either kind; mint one worth their sum to
+     * [h]. Persist whatever stands behind [h] before calling.
+     */
+    public suspend fun mergeWithHash(callback: String, k1s: List<String>, h: String): MutationOutcome<HashedNote> =
+        mutate({ mergeRequestWithHash(callback, k1s, h) }, FfiMutationKind.MERGE) { response ->
+            HashedNote(signature = response.signature)
+        }
 
     /**
      * Burn a note; the service pays [invoice] of exactly its value. Merge
@@ -312,6 +379,33 @@ public class LnurlcashClient(
         mintSecret: String,
     ): Invoice {
         val body = get(mintInvoiceRequest(payCallback, amountMsat.toULong(), mintSecret))
+        val invoice = parseInvoice(body, amountMsat.toULong())
+        return Invoice(
+            invoice = invoice.pr,
+            verifyUrl = invoice.verify,
+            disposable = invoice.disposable,
+        )
+    }
+
+    /**
+     * An invoice that mints a note to an output the caller already holds: a
+     * hash, or a Part 2 `cp1`.
+     *
+     * A hash goes as the LUD-12 comment and again as `h`, as
+     * [requestMintInvoice] sends it. A `cp1` goes as the comment alone,
+     * because `h` is a hash-only extension and a mint may refuse a key under
+     * it. Anything else is refused before any invoice exists, so a wallet
+     * never pays for a quote the service was always going to reject.
+     *
+     * Persist whatever stands behind [h] before paying the invoice this
+     * returns: this library never saw it and cannot help reconstruct it.
+     */
+    public suspend fun requestMintInvoiceWithHash(
+        payCallback: String,
+        amountMsat: Long,
+        h: String,
+    ): Invoice {
+        val body = get(mintInvoiceRequestWithHash(payCallback, amountMsat.toULong(), h))
         val invoice = parseInvoice(body, amountMsat.toULong())
         return Invoice(
             invoice = invoice.pr,
