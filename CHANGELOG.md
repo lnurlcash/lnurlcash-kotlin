@@ -5,6 +5,47 @@ carry breaking changes; pin an exact version.
 
 ## 0.1.0 — unreleased
 
+### A plain note is unsigned
+
+LUD-25 Part 2 certifies `cp1` notes only: a plain hash has nothing to attest
+to without disclosing the secret behind it. The reference mint and moneyer now
+answer a rotate, split or merge to a hash output with a bare
+`{"status":"OK"}`, and this library follows, as the core and the other kits
+do. `core.sha` moves to the core commit that made the change, and `bindings/`
+is regenerated against it in the same change.
+
+- `LnurlcashClient(requireSignatures)` now defaults to **false**. A hash output
+  that comes back unsigned is the spec, not a fault: its signature is null and
+  the outcome is `Confirmed`. Set it true to keep demanding the old Part 1
+  signature over the hash.
+- A `cp1` output is owed its `cs1` certificate whatever the options say. A
+  rotate, split or merge naming one (sent as `p1`, or `p2` for a split's
+  change) that comes back without `sig` (or `sig2` for the change) is
+  `MutationOutcome.Unverifiable`, carrying the fresh secrets as before: none
+  for the `WithHash` calls, which never saw what stands behind the output.
+- A signature present on a hash output passes through as before.
+- New `LnurlcashClient(requireMintPubkey)`, default true, takes over the
+  `withdrawRequest` `mintPubkey` check that `requireSignatures` used to carry.
+  A Part 1-only service that publishes no `mintPubkey` is admitted with it
+  false.
+
+The client builds one `FfiPolicy` from the two options and hands
+`parseMutation` the outputs each request named, so the core can tell a `cp1`
+output from a hash. A re-sent mutation is the same request, outputs and all,
+so a lost answer to a `cp1` output is still held to its certificate on the
+second attempt.
+
+Graded against `lnurlcash-conformance` 0.10.0, now the pinned ref in ci: every
+case of `responses.json`, through the client over a loopback service, a 500, a
+dropped connection and a timeout included, with the three `cp1` cases driven
+by their `output` or `change` field. Each case whose outputs are all hashes
+also goes through the call that draws its own secrets, grading which outcomes
+carry them out.
+
+If you relied on the default to refuse unsigned plain notes, set
+`requireSignatures = true`. If you want notes a recipient can check offline,
+hold `cp1` notes, which are the only kind the spec now certifies.
+
 ### LUD-25 Part 2: notes keyed by a public key
 
 `core.sha` moves to the `lnurlcash-core` commit that adds Part 2, and
@@ -49,8 +90,8 @@ to its high-S twin), so a service echoing a different `ck1` that recovers to
 the same key has named the same note; one naming any other note is still
 refused.
 
-Graded against `lnurlcash-conformance` 0.9.0, now the pinned ref in ci, through
-the facade so the FFI boundary is graded too: every field of `part2.json` (eight
+Graded against `lnurlcash-conformance` 0.9.0 through the facade, so the FFI
+boundary is graded too: every field of `part2.json` (eight
 branches of seven notes, the four certificates and the valid and invalid
 strings), each `ck1` recovered to its note key and each `cs1` to the mint's,
 and all four `nostr-seed.json` cases.
@@ -144,19 +185,19 @@ and the adversarial mock mint.
 
 ### Design notes
 
-**Offline verification is mandatory, and this library insists on it.** LUD-25
-stopped treating a note signature as optional: a service MUST publish
-`mintPubkey` and MUST sign every note a rotate, split or merge mints.
-`fetchNoteInfo` throws for a `withdrawRequest` publishing no valid one, and a
-confirmed-but-unsigned mutation returns the new `MutationOutcome.Unverifiable`.
-`LnurlcashClient(requireSignatures = false)` opts out.
+**A note owed a certificate is refused without one, and only that note.** A
+`cp1` note is owed its `cs1`, so a confirmed mutation to one without it
+returns `MutationOutcome.Unverifiable` whatever the options say. A plain hash
+note is unsigned by design and passes, unless `requireSignatures` asks for the
+old Part 1 signature. And `fetchNoteInfo` throws for a `withdrawRequest`
+publishing no valid `mintPubkey`, unless `requireMintPubkey` is off.
 
 `Unverifiable` is its own case rather than a `Rejected`, which would say the
 operation did not happen, and rather than an `Unknown`, which would say nobody
-can tell. The mutation LANDED: the note exists at the hash the wallet
-disclosed, and `newSecrets` is the only key to it. A caller matching on
-`MutationOutcome` gets a compiler error until it handles that, which is the
-whole point of the sealed interface.
+can tell. The mutation LANDED: the note exists at the key or hash the wallet
+disclosed, and whatever stands behind it is the only key to it. A caller
+matching on `MutationOutcome` gets a compiler error until it handles that,
+which is the whole point of the sealed interface.
 
 **A mutation whose answer was lost is re-sent, and usually completes.** LUD-25
 gained a "Retrying a mutation" section: a service MUST answer a byte-identical

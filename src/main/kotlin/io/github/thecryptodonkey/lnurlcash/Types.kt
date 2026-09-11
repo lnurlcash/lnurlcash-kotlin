@@ -15,17 +15,31 @@ public data class NoteInfo(
     public val maxWithdrawableMsat: Long,
     public val minWithdrawableMsat: Long,
     public val defaultDescription: String?,
-    /** Present when the service signs its notes, enabling offline verification. */
+    /**
+     * The key a `cp1` note's certificate verifies against, and a Part 1
+     * signature where a mint still issues one. Only ever null when the client
+     * was built with `requireMintPubkey = false`.
+     */
     public val mintPubkey: String?,
 )
 
-/** A note this wallet now holds, whose secret the service has never seen. */
+/**
+ * A note this wallet now holds, whose secret the service has never seen.
+ *
+ * [signature] is null for this plain hash note unless the mint still issues
+ * the old Part 1 signature over it: LUD-25 Part 2 certifies `cp1` notes only,
+ * so a conforming mint returns none, and that is the spec rather than a fault.
+ */
 public data class RotatedNote(
     public val k1: String,
     public val signature: String?,
 )
 
-/** The two notes a split produced: the amount asked for, and the change. */
+/**
+ * The two notes a split produced: the amount asked for, and the change. Both
+ * are plain hash notes, so both signatures are null unless the mint still
+ * signs them, as on [RotatedNote].
+ */
 public data class SplitNotes(
     public val k1: String,
     public val change: String,
@@ -52,16 +66,25 @@ public data class MeltReceipt(
  * `cp1`.
  *
  * There is no secret here, because the caller held it before the request went
- * out and this library never saw it. [signature] is the mint's certificate
- * over the new note: check it with [verifyNoteSignatureHash] against the
- * output (the hash, or [decodeCp1] of the `cp1`), or with [verifyNoteSignature]
- * against the note's k1 or `ck1`.
+ * out and this library never saw it.
+ *
+ * For a `cp1` output [signature] is always present: it is the mint's `cs1`
+ * certificate, and a mint that confirms without one gets
+ * [MutationOutcome.Unverifiable] instead. Check it with
+ * [verifyNoteSignatureHash] against [decodeCp1] of the output, or with
+ * [verifyNoteSignature] against the note's `ck1`. For a hash output it is null
+ * unless the mint still issues the old Part 1 signature over the hash.
  */
 public data class HashedNote(
     public val signature: String?,
 )
 
-/** The two notes a split into caller-named outputs produced, in output order. */
+/**
+ * The two notes a split into caller-named outputs produced, in output order.
+ * Each signature follows its own output's kind, as on [HashedNote]: a `cp1`
+ * change is owed its certificate in [changeSignature] exactly as a `cp1`
+ * first output is owed one in [signature].
+ */
 public data class HashedSplitNotes(
     public val signature: String?,
     public val changeSignature: String?,
@@ -242,19 +265,23 @@ public sealed interface MutationOutcome<out T> {
     ) : MutationOutcome<Nothing>
 
     /**
-     * The service confirmed the mutation but returned no signature over it.
+     * The service confirmed the mutation but returned no certificate for a
+     * `cp1` output it was owed one for.
      *
-     * LUD-25 makes offline verification mandatory, so this is a non-compliant
-     * service - but the mutation **landed**. Its own case rather than a
-     * [Rejected], which would say the operation did not happen, and rather
-     * than an [Unknown], which would say nobody can tell: the note exists, at
-     * the hash the wallet disclosed, and [newSecrets] is the only key to it
-     * anywhere. **Persist them before anything else**, then decide whether to
+     * LUD-25 Part 2 requires a `cs1` on every `cp1` output of a rotate, split
+     * or merge, so this is a non-conforming service - but the mutation
+     * **landed**. Its own case rather than a [Rejected], which would say the
+     * operation did not happen, and rather than an [Unknown], which would say
+     * nobody can tell: the note exists, at the key or hash the wallet
+     * disclosed, and whatever stands behind it is the only key to it anywhere.
+     * **Persist [newSecrets] before anything else**, then decide whether to
      * keep dealing with a mint that issues notes nobody can check.
      *
-     * Only ever produced when the client requires signatures, which is the
-     * default. [newSecrets] is empty for a mutation into outputs the caller
-     * named, for the same reason as on [Unknown].
+     * Produced for an uncertified `cp1` output whatever the client's options
+     * say. For a plain hash output, which is unsigned by design, only when the
+     * client was built with `requireSignatures = true`. [newSecrets] is empty
+     * for a mutation into outputs the caller named, for the same reason as on
+     * [Unknown].
      */
     public data class Unverifiable(
         public val newSecrets: List<String>,
