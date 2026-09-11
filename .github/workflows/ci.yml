@@ -27,9 +27,18 @@ jobs:
       # sibling repos live inside it and every consumer is pointed at them
       # explicitly (build-core.sh and generate-bindings.sh both read
       # LNURLCASH_CORE; the test task reads LNURLCASH_CONFORMANCE).
+      #
+      # The core is checked out at core.sha, the commit the checked-in
+      # bindings were generated from, as the release does. At the core's main
+      # instead, an FFI change merged over there fails the bindings diff below
+      # with no commit here, and the tests would grade a core this repo does
+      # not ship.
+      - id: pin
+        run: echo "core=$(tr -d '[:space:]' < core.sha)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
           repository: lnurlcash/lnurlcash-core
+          ref: ${{ steps.pin.outputs.core }}
           path: core
       - uses: actions/checkout@v4
         with:
@@ -78,9 +87,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+      # the same pinned core as the test job, for the same reason
+      - id: pin
+        run: echo "core=$(tr -d '[:space:]' < core.sha)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
           repository: lnurlcash/lnurlcash-core
+          ref: ${{ steps.pin.outputs.core }}
           path: core
 
       - name: build the core for every Android ABI
