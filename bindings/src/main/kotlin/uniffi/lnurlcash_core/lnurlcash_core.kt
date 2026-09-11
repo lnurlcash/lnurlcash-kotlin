@@ -990,9 +990,9 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_parse_mint_fee(`metadata`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_parse_mutation(`body`: RustBuffer.ByValue,`newSecrets`: RustBuffer.ByValue,`kind`: RustBuffer.ByValue,`requireSignatures`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    fun uniffi_lnurlcash_core_fn_func_parse_mutation(`body`: RustBuffer.ByValue,`newSecrets`: RustBuffer.ByValue,`kind`: RustBuffer.ByValue,`outputs`: RustBuffer.ByValue,`policy`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_parse_note_info(`body`: RustBuffer.ByValue,`queriedUrl`: RustBuffer.ByValue,`requireSignatures`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    fun uniffi_lnurlcash_core_fn_func_parse_note_info(`body`: RustBuffer.ByValue,`queriedUrl`: RustBuffer.ByValue,`policy`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_parse_pay_request(`body`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1479,10 +1479,10 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_parse_mint_fee() != 51423.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_parse_mutation() != 60514.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_parse_mutation() != 24961.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_parse_note_info() != 30356.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_parse_note_info() != 36779.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_parse_pay_request() != 5684.toShort()) {
@@ -1898,7 +1898,15 @@ public object FfiConverterTypeFfiMintFee: FfiConverterRustBuffer<FfiMintFee> {
 
 
 data class FfiMutation (
+    /**
+     * Always present for a `cp1` output: its `cs1` certificate. For a plain
+     * hash output null, unless the service still issues the old Part 1
+     * signature over the hash.
+     */
     var `signature`: kotlin.String?, 
+    /**
+     * The same for a split's change.
+     */
     var `changeSignature`: kotlin.String?, 
     var `pr`: kotlin.String?, 
     var `verify`: kotlin.String?
@@ -2012,6 +2020,53 @@ public object FfiConverterTypeFfiPayRequest: FfiConverterRustBuffer<FfiPayReques
 
 
 /**
+ * What the parsers insist a service does, as [`protocol::Policy`]. The
+ * defaults are the spec's: build one with no arguments unless you mean to
+ * change something.
+ */
+data class FfiPolicy (
+    /**
+     * Also demand the old Part 1 signature over a plain hash output. Off by
+     * default: LUD-25 Part 2 certifies `cp1` notes only, so a plain note is
+     * unsigned by design. A `cp1` output is owed its `cs1` certificate
+     * whatever this says.
+     */
+    var `requireSignatures`: kotlin.Boolean = false, 
+    /**
+     * Refuse a withdrawRequest that publishes no valid `mintPubkey`. On by
+     * default; off only for a Part 1-only service that publishes none.
+     */
+    var `requireMintPubkey`: kotlin.Boolean = true
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiPolicy: FfiConverterRustBuffer<FfiPolicy> {
+    override fun read(buf: ByteBuffer): FfiPolicy {
+        return FfiPolicy(
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiPolicy) = (
+            FfiConverterBoolean.allocationSize(value.`requireSignatures`) +
+            FfiConverterBoolean.allocationSize(value.`requireMintPubkey`)
+    )
+
+    override fun write(value: FfiPolicy, buf: ByteBuffer) {
+            FfiConverterBoolean.write(value.`requireSignatures`, buf)
+            FfiConverterBoolean.write(value.`requireMintPubkey`, buf)
+    }
+}
+
+
+
+/**
  * One GET, and the secrets whose loss would destroy money.
  */
 data class FfiRequest (
@@ -2021,7 +2076,15 @@ data class FfiRequest (
      * BEFORE performing the GET: if the answer is lost, they may be the only
      * copies of notes the service has already minted.
      */
-    var `newSecrets`: List<kotlin.String>
+    var `newSecrets`: List<kotlin.String>, 
+    /**
+     * The outputs a rotate, split or merge named, exactly as sent:
+     * `[output]` for a rotate or merge, `[output, change]` for a split, and
+     * empty for every other request. Hand them to [`parse_mutation`] with
+     * the response: a `cp1` output is owed a certificate and a hash output is
+     * not, and this is how the parser knows which it asked for. Not secret.
+     */
+    var `outputs`: List<kotlin.String>
 ) {
     
     companion object
@@ -2035,17 +2098,20 @@ public object FfiConverterTypeFfiRequest: FfiConverterRustBuffer<FfiRequest> {
         return FfiRequest(
             FfiConverterString.read(buf),
             FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
         )
     }
 
     override fun allocationSize(value: FfiRequest) = (
             FfiConverterString.allocationSize(value.`url`) +
-            FfiConverterSequenceString.allocationSize(value.`newSecrets`)
+            FfiConverterSequenceString.allocationSize(value.`newSecrets`) +
+            FfiConverterSequenceString.allocationSize(value.`outputs`)
     )
 
     override fun write(value: FfiRequest, buf: ByteBuffer) {
             FfiConverterString.write(value.`url`, buf)
             FfiConverterSequenceString.write(value.`newSecrets`, buf)
+            FfiConverterSequenceString.write(value.`outputs`, buf)
     }
 }
 
@@ -2146,7 +2212,8 @@ public object FfiConverterTypeFfiWithdrawInfo: FfiConverterRustBuffer<FfiWithdra
 
 /**
  * Which mutation a response is being read as. A melt mints nothing and so
- * owes no signature; a split mints two notes and owes one over each.
+ * owes nothing; a split mints two notes, and each is owed what its kind is
+ * owed.
  */
 
 enum class FfiMutationKind {
@@ -2271,10 +2338,12 @@ sealed class LnurlcashException: kotlin.Exception() {
     }
     
     /**
-     * The mutation LANDED and the SERVICE returned no signature over it.
-     * LUD-25 requires one, so this is a non-conforming SERVICE - but the note
-     * exists at the hash the wallet disclosed, and `new_secrets` is the only
-     * key to it. Persist them before deciding anything else.
+     * The mutation LANDED and the SERVICE returned no certificate for a
+     * `cp1` output, which LUD-25 Part 2 requires - or no signature over a
+     * hash output when the policy asked for one. A non-conforming SERVICE,
+     * but the note exists, and `new_secrets` is the only key to it. Persist
+     * them before deciding anything else. Empty when the caller named the
+     * output: this library never saw what stands behind it.
      */
     class Unverifiable(
         
@@ -3290,28 +3359,35 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
          * Pass the secrets the request carried: if the outcome turns out to be
          * unknown, they come back attached to the error, so nothing can lose them
          * between the call and the catch.
+         *
+         * Pass the request's `outputs` too. A `cp1` output that comes back without
+         * its certificate is [`LnurlcashError::Unverifiable`] whatever the policy
+         * says; a plain hash output comes back with its signature null, unless
+         * `policy.require_signatures` asks for one. An output missing from
+         * `outputs` is read as a hash, so leaving them out quietly drops the `cp1`
+         * check.
          */
-    @Throws(LnurlcashException::class) fun `parseMutation`(`body`: kotlin.String, `newSecrets`: List<kotlin.String>, `kind`: FfiMutationKind, `requireSignatures`: kotlin.Boolean): FfiMutation {
+    @Throws(LnurlcashException::class) fun `parseMutation`(`body`: kotlin.String, `newSecrets`: List<kotlin.String>, `kind`: FfiMutationKind, `outputs`: List<kotlin.String>, `policy`: FfiPolicy): FfiMutation {
             return FfiConverterTypeFfiMutation.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_parse_mutation(
-        FfiConverterString.lower(`body`),FfiConverterSequenceString.lower(`newSecrets`),FfiConverterTypeFfiMutationKind.lower(`kind`),FfiConverterBoolean.lower(`requireSignatures`),_status)
+        FfiConverterString.lower(`body`),FfiConverterSequenceString.lower(`newSecrets`),FfiConverterTypeFfiMutationKind.lower(`kind`),FfiConverterSequenceString.lower(`outputs`),FfiConverterTypeFfiPolicy.lower(`policy`),_status)
 }
     )
     }
     
 
         /**
-         * `require_signatures` mirrors [`protocol::Policy`]: leave it true unless the
-         * SERVICE predates LUD-25's mandatory offline verification, because a note
-         * with no key to check it against is one whoever receives it must take on
-         * faith.
+         * Only `policy.require_mint_pubkey` matters here. Leave it on unless the
+         * service is a Part 1-only mint that publishes no `mintPubkey`, because a
+         * note with no key to check it against is one whoever receives it must take
+         * on faith.
          */
-    @Throws(LnurlcashException::class) fun `parseNoteInfo`(`body`: kotlin.String, `queriedUrl`: kotlin.String, `requireSignatures`: kotlin.Boolean): FfiWithdrawInfo {
+    @Throws(LnurlcashException::class) fun `parseNoteInfo`(`body`: kotlin.String, `queriedUrl`: kotlin.String, `policy`: FfiPolicy): FfiWithdrawInfo {
             return FfiConverterTypeFfiWithdrawInfo.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_parse_note_info(
-        FfiConverterString.lower(`body`),FfiConverterString.lower(`queriedUrl`),FfiConverterBoolean.lower(`requireSignatures`),_status)
+        FfiConverterString.lower(`body`),FfiConverterString.lower(`queriedUrl`),FfiConverterTypeFfiPolicy.lower(`policy`),_status)
 }
     )
     }

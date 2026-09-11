@@ -1,12 +1,6 @@
 package io.github.thecryptodonkey.lnurlcash
 
-import com.sun.net.httpserver.HttpServer
 import java.math.BigInteger
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.URI
-import java.net.URLDecoder
-import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -186,13 +180,30 @@ class Part2WireTest {
 
     @Test
     fun `an output named by the caller leaves nothing to hand back`() {
-        // A mutation that landed and came back unsigned is Unverifiable, and
-        // for a generated output it carries the secret. Here the caller named
-        // the output, so the only copy of what stands behind it is the one the
-        // caller persisted before the call - which is why the KDoc says so.
+        // A cp1 output confirmed without its certificate is Unverifiable
+        // whatever the options say, and for a generated output that outcome
+        // carries the secret. Here the caller named the output, so the only
+        // copy of what stands behind it is the one the caller persisted before
+        // the call - which is why the KDoc says so.
         CannedService("""{"status":"OK"}""").use { service ->
             val outcome = runBlocking {
                 LnurlcashClient().rotateWithHash("${service.url}/w/cb", k1, notes[1].str("cp1"))
+            }
+            assertTrue(outcome is MutationOutcome.Unverifiable, "got $outcome")
+            assertTrue(outcome.newSecrets.isEmpty(), "${outcome.newSecrets}")
+        }
+        // A hash output is owed nothing, so the same bare OK is a success, and
+        // only a client demanding the old Part 1 signature refuses it - still
+        // with nothing to hand back.
+        val hash = hashK1("22".repeat(32))
+        CannedService("""{"status":"OK"}""").use { service ->
+            val outcome = runBlocking { LnurlcashClient().rotateWithHash("${service.url}/w/cb", k1, hash) }
+            assertTrue(outcome is MutationOutcome.Confirmed, "got $outcome")
+            assertNull(outcome.value.signature)
+        }
+        CannedService("""{"status":"OK"}""").use { service ->
+            val outcome = runBlocking {
+                LnurlcashClient(requireSignatures = true).rotateWithHash("${service.url}/w/cb", k1, hash)
             }
             assertTrue(outcome is MutationOutcome.Unverifiable, "got $outcome")
             assertTrue(outcome.newSecrets.isEmpty(), "${outcome.newSecrets}")
@@ -305,40 +316,3 @@ private fun highSTwin(ck1: String): String {
     val recovery = signature.substring(128).toInt(16) xor 1
     return encodeCk1(signature.substring(0, 64) + twinS + "%02x".format(recovery))
 }
-
-/** A loopback HTTP server that answers every GET with [body] and records what it was asked. */
-private class CannedService(private val body: String) : AutoCloseable {
-    val requests: MutableList<URI> = CopyOnWriteArrayList()
-
-    private val server = HttpServer.create(InetSocketAddress(InetAddress.getByName("127.0.0.1"), 0), 0).apply {
-        createContext("/") { exchange ->
-            requests.add(exchange.requestURI)
-            val bytes = body.toByteArray()
-            exchange.responseHeaders.add("Content-Type", "application/json")
-            exchange.sendResponseHeaders(200, bytes.size.toLong())
-            exchange.responseBody.use { it.write(bytes) }
-        }
-        start()
-    }
-
-    val url: String get() = "http://127.0.0.1:${server.address.port}"
-
-    /** Every value of [key] on the one request this service received. */
-    fun params(key: String): List<String> {
-        assertEquals(1, requests.size, "exactly one request")
-        return requests.single().toString().params(key)
-    }
-
-    fun param(key: String): String? = params(key).firstOrNull()
-
-    override fun close() = server.stop(0)
-}
-
-private fun String.params(key: String): List<String> =
-    (URI(this).rawQuery ?: "").split('&')
-        .filter { it.isNotEmpty() }
-        .map { it.substringBefore('=') to URLDecoder.decode(it.substringAfter('=', ""), Charsets.UTF_8) }
-        .filter { it.first == key }
-        .map { it.second }
-
-private fun String.param(key: String): String? = params(key).firstOrNull()

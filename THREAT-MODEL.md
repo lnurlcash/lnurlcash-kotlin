@@ -34,8 +34,8 @@ meaningless.
 
 A mint is trusted with custody by construction — it holds the funds. It is
 *not* trusted to describe them accurately, which is why value comes from
-`maxWithdrawable` rather than from a note URL's own `amount`, and why a
-signed note can be checked against a key the mint published earlier.
+`maxWithdrawable` rather than from a note URL's own `amount`, and why a `cp1`
+note's certificate can be checked against a key the mint published earlier.
 
 ## What this library defends against
 
@@ -58,9 +58,18 @@ http to loopback or `.onion`. A `data:` URL carrying withdrawRequest JSON
 would otherwise mint a self-contained fake note that verifies against
 nothing.
 
-**A service that inflates a note.** With offline verification configured, the
-signature commits to the amount. A service reporting more than it signed
-fails verification, without the holder contacting anyone.
+**A service that inflates a note.** A `cp1` note's certificate commits to the
+amount, and so does a Part 1 signature where a mint still issues one. A
+service reporting more than it signed fails verification, without the holder
+contacting anyone. A plain hash note carries no signature by design since the
+LUD-25 Part 2 rewrite, so this defence belongs to the `cp1` note: hold one
+where it matters.
+
+**A service that leaves a `cp1` note uncertified.** A `cp1` output is owed its
+`cs1` whatever the client's options say, so a confirmed rotate, split or merge
+to one without it comes back as `MutationOutcome.Unverifiable`, never as a
+success. The client hands the core the outputs each request named, a re-sent
+request included, which is how it knows which outputs were owed one.
 
 **A service that swaps your note.** The informational GET checks that the
 echoed `k1` is the one queried. A different one means either a non-compliant

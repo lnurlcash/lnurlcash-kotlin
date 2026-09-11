@@ -84,17 +84,29 @@ Transport-level retries stay off regardless: a deliberate retry this library
 counts is a different thing from an invisible one it does not. **If you supply
 your own client, it must have retries disabled.**
 
-## Offline verification is mandatory
+## Which notes can be checked offline
 
-A service MUST publish `mintPubkey` and MUST sign every note a rotate, split or
-merge mints. `fetchNoteInfo` throws for a `withdrawRequest` publishing no valid
-one, and a mutation the service confirms but does not sign comes back as
-`MutationOutcome.Unverifiable` — its own case, because the mutation **landed**:
-the note is real, and `newSecrets` is the only key to it. Persist them before
-anything else.
+LUD-25 Part 2 certifies `cp1` notes only. A plain hash note has nothing to
+attest to without disclosing the secret behind it, so a conforming service
+answers a rotate, split or merge to a hash with a bare `{"status":"OK"}`, and
+the note comes back with its signature null. That is the spec, not a fault.
 
-`LnurlcashClient(requireSignatures = false)` opts out for a service that
-predates the requirement.
+A `cp1` output is owed its `cs1` certificate whatever the options say. A
+mutation the service confirms without one comes back as
+`MutationOutcome.Unverifiable`: its own case, because the mutation **landed**,
+the note is real, and whatever stands behind it is the only key to it. Persist
+it before anything else.
+
+`fetchNoteInfo` throws for a `withdrawRequest` that publishes no valid
+`mintPubkey`, the key a certificate verifies against.
+
+- `LnurlcashClient(requireSignatures = true)` also demands the old Part 1
+  signature over a hash output, as every mint did before the Part 2 rewrite.
+  An unsigned one is then `Unverifiable` too, carrying the fresh secrets.
+- `LnurlcashClient(requireMintPubkey = false)` admits a Part 1-only service
+  that publishes no `mintPubkey`.
+
+If you want a note a recipient can check offline, hold a `cp1` note.
 
 ## Usage
 
@@ -116,7 +128,8 @@ when (val outcome = client.rotate(info.callback, info.k1)) {
             NoteFate.UNKNOWN -> {}             // keep everything, try again later
         }
     }
-    // the mutation landed, and the mint did not sign what it minted
+    // landed, without a signature it was owed: only under requireSignatures
+    // for this plain rotate, and always for a cp1 output left uncertified
     is MutationOutcome.Unverifiable -> save(outcome.newSecrets)
 }
 ```

@@ -11,6 +11,7 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import uniffi.lnurlcash_core.FfiPolicy
 import uniffi.lnurlcash_core.FfiRequest
 import uniffi.lnurlcash_core.LnurlcashException
 import uniffi.lnurlcash_core.invoiceRequest
@@ -57,11 +58,19 @@ import uniffi.lnurlcash_core.verifyRequest
  * @param secretSource where replacement note secrets come from. Substitute for
  *   a hardware RNG - and note that a predictable secret is a note anyone can
  *   spend.
- * @param requireSignatures insist on the offline verification LUD-25 makes
- *   mandatory: a service MUST publish `mintPubkey` and MUST sign every note a
- *   rotate, split or merge mints. Turn it off only to talk to a service that
- *   predates the requirement, and only knowing the cost - an unsigned note is
- *   one whoever receives it has to take on faith.
+ * @param requireSignatures also demand the old Part 1 signature over a plain
+ *   hash output, as every mint did before the Part 2 rewrite. Off by default:
+ *   LUD-25 Part 2 certifies `cp1` notes only, because a hash has nothing to
+ *   attest to without disclosing the secret behind it, so a conforming service
+ *   answers a rotate, split or merge to a hash with a bare `{"status":"OK"}`
+ *   and the note comes back with its signature null. A `cp1` output is owed
+ *   its `cs1` certificate whatever this says. With it on, an unsigned hash
+ *   output is [MutationOutcome.Unverifiable], carrying the fresh secrets.
+ * @param requireMintPubkey refuse a `withdrawRequest` that publishes no
+ *   `mintPubkey`, or one that is not a 33-byte compressed key: the key a `cp1`
+ *   note's certificate verifies against. On by default. Turn it off only for a
+ *   Part 1-only service that publishes none, knowing that nothing it issues can
+ *   then be checked offline.
  * @param mutationRetries how many times to re-send a rotate, split or merge
  *   whose outcome the transport lost. LUD-25 requires a service to answer a
  *   byte-identical retry with the original success, so re-sending resolves the
@@ -74,9 +83,21 @@ public class LnurlcashClient(
     private val http: OkHttpClient = defaultHttpClient(timeout),
     private val offline: Boolean = false,
     private val secretSource: () -> String = ::generateNoteSecret,
-    private val requireSignatures: Boolean = true,
+    private val requireSignatures: Boolean = false,
+    private val requireMintPubkey: Boolean = true,
     private val mutationRetries: Int = 1,
 ) {
+
+    /**
+     * The two options as the core reads them, built once. Every parse goes
+     * through this rather than a loose boolean, so the two cannot be crossed
+     * at a call site: the core used to hang the `mintPubkey` check off the
+     * signatures flag, and they are unrelated questions.
+     */
+    private val policy: FfiPolicy = FfiPolicy(
+        requireSignatures = requireSignatures,
+        requireMintPubkey = requireMintPubkey,
+    )
 
     public companion object {
         /**
@@ -139,7 +160,7 @@ public class LnurlcashClient(
      */
     public suspend fun fetchNoteInfo(url: String): NoteInfo {
         val body = get(noteInfoRequest(url))
-        val info = parseNoteInfo(body, url, requireSignatures)
+        val info = parseNoteInfo(body, url, policy)
         return NoteInfo(
             callback = info.callback,
             k1 = info.k1,
@@ -537,8 +558,12 @@ public class LnurlcashClient(
             )
         }
         return try {
+            // request.outputs is what tells the core a cp1 output from a hash,
+            // and so which one is owed a certificate. An output missing from it
+            // is read as a hash, which would quietly drop the cp1 check - so it
+            // is always the request's own list, never a restatement of it.
             MutationOutcome.Confirmed(
-                onConfirmed(parseMutation(body, request.newSecrets, kind, requireSignatures)),
+                onConfirmed(parseMutation(body, request.newSecrets, kind, request.outputs, policy)),
             )
         } catch (err: LnurlcashException.Ambiguous) {
             MutationOutcome.Unknown(

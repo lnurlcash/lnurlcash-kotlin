@@ -379,13 +379,38 @@ class ProtocolTest {
         }
 
     @Test
-    fun `an unsigned rotate is refused without losing the note`() =
+    fun `an unsigned plain note is the spec, not a fault`() =
         withMint("--signatures=false") { mint, client ->
-            // Offline verification stopped being optional, so a service issuing
-            // no signatures is non-compliant rather than merely basic. The
-            // mutation LANDED though, and the fresh secret is the only key to
-            // the note it minted - so it is its own outcome, carrying them.
+            // LUD-25 Part 2 certifies cp1 notes only: a hash has nothing to
+            // attest to without disclosing the secret behind it. So a mint
+            // answering a plain rotate or split with a bare OK is following the
+            // spec, and the notes come back unsigned - which is what a plain
+            // note is.
             val k1 = secret(32)
+            mint.credit(k1, 21_000)
+
+            val info = client.fetchNoteInfo(mint.noteUrl(k1))
+            val rotated = client.rotate(info.callback, k1)
+            assertTrue(rotated is MutationOutcome.Confirmed, "got $rotated")
+            assertNull(rotated.value.signature)
+            assertEquals("outstanding", mint.noteState(rotated.value.k1))
+
+            val split = client.split(info.callback, listOf(rotated.value.k1), 5_000)
+            assertTrue(split is MutationOutcome.Confirmed, "got $split")
+            assertNull(split.value.signature)
+            assertNull(split.value.changeSignature)
+            assertEquals("outstanding", mint.noteState(split.value.change))
+        }
+
+    @Test
+    fun `requiring signatures refuses an unsigned rotate without losing the note`() =
+        withMint("--signatures=false") { mint, _ ->
+            // A caller who still wants the old Part 1 signature over the hash
+            // can ask for it. The mutation LANDED though, and the fresh secret
+            // is the only key to the note it minted - so it is its own
+            // outcome, carrying them.
+            val client = LnurlcashClient(requireSignatures = true)
+            val k1 = secret(33)
             mint.credit(k1, 21_000)
 
             val outcome = client.rotate(mint.callback(), k1)
@@ -393,20 +418,6 @@ class ProtocolTest {
             assertEquals(1, outcome.newSecrets.size)
             // the note the caller was refused is real and outstanding
             assertEquals("outstanding", mint.noteState(outcome.newSecrets.first()))
-        }
-
-    @Test
-    fun `an unsigned service still works when the caller opts out`() =
-        withMint("--signatures=false") { mint, _ ->
-            val client = LnurlcashClient(requireSignatures = false)
-            val k1 = secret(33)
-            mint.credit(k1, 21_000)
-
-            val info = client.fetchNoteInfo(mint.noteUrl(k1))
-            val outcome = client.rotate(info.callback, k1)
-            assertTrue(outcome is MutationOutcome.Confirmed, "got $outcome")
-            assertNull(outcome.value.signature)
-            assertEquals("outstanding", mint.noteState(outcome.value.k1))
         }
 
     @Test
