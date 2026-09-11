@@ -1,5 +1,6 @@
 package io.github.thecryptodonkey.lnurlcash
 
+import uniffi.lnurlcash_core.FfiCx1
 import uniffi.lnurlcash_core.FfiMintFee
 import uniffi.lnurlcash_core.applyMintFee as coreApplyMintFee
 import uniffi.lnurlcash_core.buildNoteUrl as coreBuildNoteUrl
@@ -7,28 +8,53 @@ import uniffi.lnurlcash_core.decodeBolt11AmountMsat as coreDecodeBolt11AmountMsa
 import uniffi.lnurlcash_core.describeMintFee as coreDescribeMintFee
 import uniffi.lnurlcash_core.buildNoteInfoUrlByHash as coreBuildNoteInfoUrlByHash
 import uniffi.lnurlcash_core.cashDomainIndices as coreCashDomainIndices
+import uniffi.lnurlcash_core.cashNodeToCx1 as coreCashNodeToCx1
 import uniffi.lnurlcash_core.cashSecretAt as coreCashSecretAt
+import uniffi.lnurlcash_core.decodeCk1 as coreDecodeCk1
+import uniffi.lnurlcash_core.decodeCp1 as coreDecodeCp1
+import uniffi.lnurlcash_core.decodeCs1 as coreDecodeCs1
+import uniffi.lnurlcash_core.decodeCx1 as coreDecodeCx1
+import uniffi.lnurlcash_core.deriveCashAddressNode as coreDeriveCashAddressNode
+import uniffi.lnurlcash_core.deriveCashChild as coreDeriveCashChild
 import uniffi.lnurlcash_core.deriveCashDomainNode as coreDeriveCashDomainNode
+import uniffi.lnurlcash_core.deriveCashMaster as coreDeriveCashMaster
 import uniffi.lnurlcash_core.deriveCashRoot as coreDeriveCashRoot
 import uniffi.lnurlcash_core.deriveCashSecret as coreDeriveCashSecret
+import uniffi.lnurlcash_core.deriveNostrAddressNode as coreDeriveNostrAddressNode
+import uniffi.lnurlcash_core.deriveNostrCashSeed as coreDeriveNostrCashSeed
+import uniffi.lnurlcash_core.deriveNotePubkey as coreDeriveNotePubkey
 import uniffi.lnurlcash_core.deriveNoteRoot as coreDeriveNoteRoot
 import uniffi.lnurlcash_core.deriveNoteSecret as coreDeriveNoteSecret
+import uniffi.lnurlcash_core.deriveNoteSecretKey as coreDeriveNoteSecretKey
+import uniffi.lnurlcash_core.encodeCk1 as coreEncodeCk1
+import uniffi.lnurlcash_core.encodeCp1 as coreEncodeCp1
+import uniffi.lnurlcash_core.encodeCs1 as coreEncodeCs1
+import uniffi.lnurlcash_core.encodeCx1 as coreEncodeCx1
 import uniffi.lnurlcash_core.generateNoteSecret as coreGenerateNoteSecret
 import uniffi.lnurlcash_core.grossUpForMintFee as coreGrossUpForMintFee
 import uniffi.lnurlcash_core.hashK1 as coreHashK1
 import uniffi.lnurlcash_core.isAllowedServiceUrl as coreIsAllowedServiceUrl
 import uniffi.lnurlcash_core.isBolt11Invoice as coreIsBolt11Invoice
+import uniffi.lnurlcash_core.isCk1 as coreIsCk1
+import uniffi.lnurlcash_core.isCp1 as coreIsCp1
+import uniffi.lnurlcash_core.isCs1 as coreIsCs1
+import uniffi.lnurlcash_core.isCx1 as coreIsCx1
 import uniffi.lnurlcash_core.isPreimage as coreIsPreimage
 import uniffi.lnurlcash_core.mintAddressUrl as coreMintAddressUrl
 import uniffi.lnurlcash_core.noteDeclaredAmount as coreNoteDeclaredAmount
+import uniffi.lnurlcash_core.noteIdOf as coreNoteIdOf
 import uniffi.lnurlcash_core.noteK1 as coreNoteK1
+import uniffi.lnurlcash_core.noteLookupOf as coreNoteLookupOf
 import uniffi.lnurlcash_core.noteSignature as coreNoteSignature
 import uniffi.lnurlcash_core.parseMintFee as coreParseMintFee
+import uniffi.lnurlcash_core.recoverNoteOwnershipPubkey as coreRecoverNoteOwnershipPubkey
 import uniffi.lnurlcash_core.resolveLnurlInput as coreResolveLnurlInput
 import uniffi.lnurlcash_core.resolveMintInput as coreResolveMintInput
 import uniffi.lnurlcash_core.resolveNoteInput as coreResolveNoteInput
 import uniffi.lnurlcash_core.sameInvoice as coreSameInvoice
+import uniffi.lnurlcash_core.signNoteOwnership as coreSignNoteOwnership
 import uniffi.lnurlcash_core.verifyNoteSignature as coreVerifyNoteSignature
+import uniffi.lnurlcash_core.verifyNoteSignatureHash as coreVerifyNoteSignatureHash
 import uniffi.lnurlcash_core.withNewK1 as coreWithNewK1
 import uniffi.lnurlcash_core.withoutK1 as coreWithoutK1
 
@@ -94,6 +120,25 @@ public fun cashDomainIndices(rootHex: String, host: String): List<UInt> =
     coreCashDomainIndices(rootHex, host)
 
 /**
+ * The BIP-32 master node of a seed, as `privateKey || chainCode` hex.
+ *
+ * For walking a path this library does not name. [deriveCashRoot] is `m/139'`
+ * beneath it, and it is here so a caller checking a path by hand starts from
+ * the same node every other implementation does.
+ */
+public fun deriveCashMaster(seedHex: String): String = coreDeriveCashMaster(seedHex)
+
+/**
+ * One BIP-32 CKDpriv step: hardened when [index] is at or above 2^31, and only
+ * then.
+ *
+ * The index decides, not the caller, which is exactly what LUD-25's raw uint32
+ * levels need. It is also how the address branch's `m/139'/1'` is reached:
+ * `deriveCashChild(root, 0x8000_0001u)`.
+ */
+public fun deriveCashChild(nodeHex: String, index: UInt): String = coreDeriveCashChild(nodeHex, index)
+
+/**
  * The LEGACY pre-spec HMAC scheme's root, for finding notes minted before
  * LUD-25 specified a derivation. Do not mint under it.
  */
@@ -113,6 +158,11 @@ public fun deriveNoteSecret(rootHex: String, host: String, index: UInt): String 
  * service that does not index by hash, one that never issued the note, and one
  * that BURNED it all answer identically, which is why the persisted per-host
  * counter is the real backup and the scan is only a fallback.
+ *
+ * [h] may also be a Part 2 `cp1`, which goes as `p`, the name LUD-25 now uses.
+ * A hash keeps `h`, which every mint that ever took a hash lookup understands.
+ * [noteLookupOf] gives the right one for either kind of k1. A `ck1` is refused:
+ * it spends the note, so it is never a private lookup.
  */
 public fun buildNoteInfoUrlByHash(withdrawLink: String, h: String): String? =
     coreBuildNoteInfoUrlByHash(withdrawLink, h)
@@ -126,6 +176,11 @@ public fun isPreimage(value: String): Boolean = coreIsPreimage(value)
  * Accepts the recovery id at either end of the signature, because
  * implementations disagree about which end it belongs on. Trying both is safe:
  * the wrong ordering recovers an unrelated key that cannot match.
+ *
+ * [k1] may be a Part 2 `ck1`: its id is the key it recovers to, found locally,
+ * so checking one needs no network either. [signatureHex] may be a `cs1`,
+ * which is the same 65 bytes encoded. A k1 that is neither 32 bytes of hex nor
+ * a `ck1` that recovers has no id to check, and is a plain `false`.
  */
 public fun verifyNoteSignature(
     k1: String,
@@ -134,7 +189,202 @@ public fun verifyNoteSignature(
     mintPubkeyHex: String,
 ): Boolean = coreVerifyNoteSignature(k1, amountMsat.toULong(), signatureHex, mintPubkeyHex)
 
-/** Resolve scanned or pasted text to a note URL - bech32, `lnurlw://`, or https. */
+/**
+ * [verifyNoteSignature] by the note's id rather than its k1: a hash, or a Part
+ * 2 note's public key as hex (what [decodeCp1] gives for a `cp1`).
+ *
+ * For checking a certificate without the secret that spends the note. A
+ * watcher holding only a branch's `cx1` never has that secret, and a wallet
+ * that named an output with [LnurlcashClient.rotateWithHash] only needs the
+ * output it named.
+ */
+public fun verifyNoteSignatureHash(
+    h: String,
+    amountMsat: Long,
+    signatureHex: String,
+    mintPubkeyHex: String,
+): Boolean = coreVerifyNoteSignatureHash(h, amountMsat.toULong(), signatureHex, mintPubkeyHex)
+
+// ---- LUD-25 Part 2: notes keyed by a public key ----
+//
+// A Part 2 note swaps the hash for a key pair. The holder keeps `sk` and the
+// service only ever sees `pk`, written `cp1...`. To spend the note the holder
+// hands over `ck1...`, a recoverable signature by `sk` over a fixed message;
+// the service recovers `pk` from it and finds the note. The mint certifies each
+// note with `cs1...`, the signature it has always made, over `hex(pk)` instead
+// of a hash, so a recipient can check a note offline with nothing but its `ck1`
+// and `cs1`.
+//
+// Raw bytes cross as hex, as everywhere else here, and the four bech32m
+// strings as themselves. A note secret key, a `ck1`, an address node and a
+// Nostr cash seed are all bearer material: store them the way notes are
+// stored, and never log them. A `cx1` spends nothing, but links every note on
+// its branch.
+//
+// Every decoder returns null rather than throwing for anything that is not
+// exactly its own type at exactly its own length. BIP-350's rules apply: all
+// uppercase is the same string, and mixed case, a bech32 checksum where a
+// bech32m one belongs, the wrong prefix and non-zero padding are all refused.
+// There is no 90-character limit; `ck1`, `cs1` and `cx1` all run past it.
+
+/** A note's 32-byte x-only public key as a `cp1`: what a wallet discloses as an output. */
+public fun encodeCp1(pubkeyXOnlyHex: String): String = coreEncodeCp1(pubkeyXOnlyHex)
+
+/** The 32-byte key inside a `cp1`, as hex, or null for anything that is not one. */
+public fun decodeCp1(value: String): String? = coreDecodeCp1(value)
+
+public fun isCp1(value: String): Boolean = coreIsCp1(value)
+
+/**
+ * A 65-byte ownership signature, `r || s || recovery id`, as a `ck1`.
+ *
+ * That string spends the note, so it is as secret as the key that made it.
+ */
+public fun encodeCk1(signatureHex: String): String = coreEncodeCk1(signatureHex)
+
+/** The 65 bytes inside a `ck1`, as hex, or null for anything that is not one. */
+public fun decodeCk1(value: String): String? = coreDecodeCk1(value)
+
+public fun isCk1(value: String): Boolean = coreIsCk1(value)
+
+/**
+ * A mint's 65-byte certificate as a `cs1`. It proves issuance and spends
+ * nothing, so it can travel with a note in the open.
+ */
+public fun encodeCs1(signatureHex: String): String = coreEncodeCs1(signatureHex)
+
+/** The 65 bytes inside a `cs1`, as hex, or null for anything that is not one. */
+public fun decodeCs1(value: String): String? = coreDecodeCs1(value)
+
+public fun isCs1(value: String): Boolean = coreIsCs1(value)
+
+/**
+ * A watch-only branch as a `cx1`: its x-only public key followed by its chain
+ * code.
+ *
+ * Whoever holds one can derive every note key on the branch, and so link every
+ * note on it to the others, but can spend none of them. That is what lets a
+ * mint holding a registered `cx1` pay straight to the holder's next key, and it
+ * is also why handing one out is a privacy decision.
+ */
+public fun encodeCx1(pubkeyXOnlyHex: String, chainCodeHex: String): String =
+    coreEncodeCx1(pubkeyXOnlyHex, chainCodeHex)
+
+/** Both halves of a `cx1`, or null for anything that is not one. */
+public fun decodeCx1(value: String): Cx1? = coreDecodeCx1(value)?.toKotlin()
+
+public fun isCx1(value: String): Boolean = coreIsCx1(value)
+
+/**
+ * A note's public key at [index], from the watch-only half of a branch alone.
+ *
+ * [index] is any `UInt` and is never hardened. The tweak is BIP-341's, so a
+ * watcher holding only the `cx1` computes the same key the holder does.
+ *
+ * An index whose tweak lands at or above the curve order is an error rather
+ * than reduced. A reduced key is one no other implementation derives, and a
+ * note minted to it is a note nobody can find, so use the next index. The
+ * odds are around 2^-128, which is why this is worth saying and not worth
+ * designing around.
+ */
+public fun deriveNotePubkey(branchPubkeyXOnlyHex: String, chainCodeHex: String, index: UInt): String =
+    coreDeriveNotePubkey(branchPubkeyXOnlyHex, chainCodeHex, index)
+
+/**
+ * The secret key behind [deriveNotePubkey]. Bearer material.
+ *
+ * A branch key whose point has odd y is negated first. A `cx1` carries only x,
+ * which names the even-y point, so without the negation the holder's keys and
+ * a watcher's would disagree on half of all branches.
+ */
+public fun deriveNoteSecretKey(branchPrivateKeyHex: String, chainCodeHex: String, index: UInt): String =
+    coreDeriveNoteSecretKey(branchPrivateKeyHex, chainCodeHex, index)
+
+/**
+ * The 65-byte ownership signature over the fixed message `LNURLcash`, as hex.
+ * [encodeCk1] it for the wire. Either way, it spends the note.
+ *
+ * RFC6979 and low-S, so one key always reproduces one `ck1` byte for byte: a
+ * wallet restored from its seed can re-sign every note it ever held.
+ * Deterministic is not unique, though. See [noteIdOf].
+ */
+public fun signNoteOwnership(secretKeyHex: String): String = coreSignNoteOwnership(secretKeyHex)
+
+/**
+ * The note's x-only public key, recovered offline from its 65-byte ownership
+ * signature, or null for anything that does not recover.
+ *
+ * This is what a service does with a `ck1` to find the note: [decodeCk1] then
+ * this gives the key the note is filed under.
+ */
+public fun recoverNoteOwnershipPubkey(signatureHex: String): String? =
+    coreRecoverNoteOwnershipPubkey(signatureHex)
+
+/**
+ * The id a service files a note under: `sha256(k1)` for a Part 1 secret, the
+ * key a `ck1` recovers to for a Part 2 note, and null for anything else.
+ *
+ * Compare notes by this, never by k1. One Part 2 note has more than one valid
+ * `ck1` string (anyone can flip a signature to its high-S twin, and it still
+ * recovers to the same key), so a wallet deduplicating by string would hold
+ * one note twice.
+ */
+public fun noteIdOf(k1: String): String? = coreNoteIdOf(k1)
+
+/**
+ * What to look a note up by without disclosing it: the hash for a Part 1
+ * secret, the `cp1` for a Part 2 note. Pass it to [buildNoteInfoUrlByHash].
+ */
+public fun noteLookupOf(k1: String): String? = coreNoteLookupOf(k1)
+
+/**
+ * `m/139'/1'/d1/d2/d3/d4` for one mint, as `privateKey || chainCode` hex: the
+ * address branch Part 2 note keys hang off, with the hashing key at
+ * `m/139'/1'/0`.
+ *
+ * This is lnurl-wallet's path, and the one every implementation uses. The
+ * draft's text roots the branch at `m/139'/d1..d4`, which is the very node
+ * [deriveCashDomainNode] already derives for Part 1 secrets, so a wallet
+ * following the text would find none of the reference wallet's notes.
+ *
+ * Bearer material for every note on the branch. Hand out [cashNodeToCx1] of it,
+ * never the node.
+ */
+public fun deriveCashAddressNode(rootHex: String, host: String): String =
+    coreDeriveCashAddressNode(rootHex, host)
+
+/** The watch-only half of a branch node: what a mint or a watcher is given. */
+public fun cashNodeToCx1(nodeHex: String): Cx1 = coreCashNodeToCx1(nodeHex).toKotlin()
+
+/**
+ * Not LUD-25: the cash seed of a Nostr identity key,
+ * `HMAC-SHA256(key = the secret key, msg = "LNURLcash/nostr-seed")`. Bearer
+ * material for every note on the identity's branches.
+ */
+public fun deriveNostrCashSeed(secretKeyHex: String): String = coreDeriveNostrCashSeed(secretKeyHex)
+
+/**
+ * Not LUD-25: one mint's address branch for a Nostr identity key, as a 64-byte
+ * hex node. The address path from [deriveNostrCashSeed]'s seed, unchanged.
+ *
+ * A lightning address on a Nostr-native mint belongs to an npub, and a holder
+ * with no BIP-39 words (a hardware signer that keeps only its identity key, or
+ * a wallet that never made any) can still be paid to keys of its own. Whoever
+ * can restore the identity key can rebuild every note paid to the branch, with
+ * or without the device that received them. A mint sees an ordinary `cx1`
+ * either way.
+ *
+ * Bearer material: hand out [cashNodeToCx1] of it.
+ */
+public fun deriveNostrAddressNode(secretKeyHex: String, host: String): String =
+    coreDeriveNostrAddressNode(secretKeyHex, host)
+
+/**
+ * Resolve scanned or pasted text to a note URL - bech32, `lnurlw://`, or https.
+ *
+ * The URL's k1 must be 32 bytes of hex or a Part 2 `ck1` that recovers to a
+ * key. A `cp1` there is refused: it names the note but cannot spend it.
+ */
 public fun resolveNoteInput(value: String): String? = coreResolveNoteInput(value)
 
 /** Resolve a mint address, bare domain or bech32 LNURL to its payRequest URL. */
@@ -193,3 +443,5 @@ internal fun FfiMintFee.toKotlin(): MintFee =
 
 internal fun MintFee.toFfi(): FfiMintFee =
     FfiMintFee(baseFeeMsat = baseFeeMsat.toULong(), feePpm = feePpm.toULong())
+
+internal fun FfiCx1.toKotlin(): Cx1 = Cx1(pubkeyXOnly = pubkeyXOnly, chainCode = chainCode)

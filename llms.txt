@@ -50,15 +50,64 @@ suspend melt(callback, k1, invoice): MutationOutcome<MeltReceipt>
 suspend settleNote(baseUrl, k1, expectedAmountMsat, signature): SettledNote
 suspend probeBurnedNote(url): NoteFate             // LIVE | GONE | UNKNOWN
 suspend fetchPayRequest / requestInvoice / fetchInvoiceStatus / fetchMintAddress
+suspend requestMintInvoice(payCallback, amountMsat, mintSecret): Invoice
+suspend rotateWithHash(callback, k1, h): MutationOutcome<HashedNote>
+suspend splitWithHash(callback, k1s, amountMsat, h, h2): MutationOutcome<HashedSplitNotes>
+suspend mergeWithHash(callback, k1s, h): MutationOutcome<HashedNote>
+suspend requestMintInvoiceWithHash(payCallback, amountMsat, h): Invoice
+  The *WithHash forms take an output the caller already holds: a hash, or a
+  Part 2 cp1. They never see the secret behind it, so Unknown/Unverifiable
+  carry NO secrets from them: persist it BEFORE the call.
 
-Top-level pure functions: verifyNoteSignature, generateNoteSecret, hashK1,
-isPreimage, resolveNoteInput, resolveMintInput, resolveLnurlInput,
-isAllowedServiceUrl, buildNoteUrl, withNewK1, withoutK1, noteK1,
-noteDeclaredAmountMsat, noteSignature, parseMintFee, applyMintFee,
-grossUpForMintFee, describeMintFee, decodeBolt11AmountMsat, isBolt11Invoice,
-sameInvoice.
+Top-level pure functions: verifyNoteSignature, verifyNoteSignatureHash,
+generateNoteSecret, hashK1, isPreimage, resolveNoteInput, resolveMintInput,
+resolveLnurlInput, isAllowedServiceUrl, buildNoteUrl, withNewK1, withoutK1,
+noteK1, noteDeclaredAmountMsat, noteSignature, buildNoteInfoUrlByHash,
+parseMintFee, applyMintFee, grossUpForMintFee, describeMintFee,
+decodeBolt11AmountMsat, isBolt11Invoice, sameInvoice.
+
+Seed-recoverable secrets (nodes are privateKey || chainCode, 128 hex chars):
+deriveCashRoot(seedHex), deriveCashDomainNode(root, host), cashSecretAt(node, i),
+deriveCashSecret(root, host, i), cashDomainIndices(root, host),
+deriveCashMaster(seedHex), deriveCashChild(node, index: UInt) (hardened iff
+index >= 2^31). LEGACY, do not mint under: deriveNoteRoot, deriveNoteSecret.
 
 Amounts are Long milli-satoshis everywhere (the bindings' ULong is converted).
+
+## LUD-25 Part 2: a note keyed by a public key, spent by a recoverable signature
+
+Hex in, hex out, as everywhere else here. Decoders return null, never throw.
+encodeCp1/decodeCp1/isCp1   note pubkey, 32-byte x-only, bech32m "cp"
+encodeCk1/decodeCk1/isCk1   bearer secret, 65-byte r||s||recid, "ck". SPENDS
+encodeCs1/decodeCs1/isCs1   mint certificate over hex(pk), same layout, "cs"
+encodeCx1/decodeCx1/isCx1   watch-only branch, Cx1(pubkeyXOnly, chainCode), "cx"
+  No length limit; all-uppercase accepted; mixed case, a bech32 (not
+  bech32m) checksum, the wrong hrp or length and non-zero padding refused
+deriveCashAddressNode(root, host)   m/139'/1'/d1..d4, hashing key m/139'/1'/0.
+  The REFERENCE WALLET's path, not the spec text's m/139'/d1..d4 (that is the
+  Part 1 ladder's node, and finds none of its notes). Bearer material
+cashNodeToCx1(node): Cx1   the part to hand out; it links every note on the
+  branch but spends none
+deriveNotePubkey(P, chainCode, i: UInt)   watch-only; i any UInt, never
+  hardened. t >= n is an error, never reduced: use the next index
+deriveNoteSecretKey(p, chainCode, i: UInt)   negates p first when P has odd y
+signNoteOwnership(sk) -> 65-byte hex   RFC6979, low-S, over the fixed
+  "LNURLcash". encodeCk1 it for the wire
+recoverNoteOwnershipPubkey(sig) -> pk?
+noteIdOf(k1) -> id?   sha256(k1) for a secret, the recovered key for a ck1.
+  One note has many valid ck1 strings: compare notes by this, never by k1
+noteLookupOf(k1) -> String?   the hash, or the cp1 for a ck1; pass it to
+  buildNoteInfoUrlByHash, which sends a cp1 as p and a hash as h
+verifyNoteSignature also takes a ck1 as k1 and a cs1 as the signature;
+  verifyNoteSignatureHash(id, amountMsat, sig, mintPubkey) checks by pk or hash
+Wire: a ck1 goes wherever a k1 does; a cp1 wherever an output does.
+  requestMintInvoiceWithHash: a cp1 goes as the comment alone (a hash also
+  sends h). rotate/split/mergeWithHash: p1/p2 for a cp1, h/h2 for a hash.
+  fetchNoteInfo compares the echoed k1 as the note it names: a mint echoing
+  the high-S twin of our ck1 is the same note; another key is still refused
+deriveNostrCashSeed(sk) / deriveNostrAddressNode(sk, host)   NOT LUD-25: a
+  branch from a Nostr identity key, via
+  HMAC-SHA256(key = sk, msg = "LNURLcash/nostr-seed"), then the address path
 
 ## MutationOutcome
 
@@ -83,7 +132,9 @@ secrets. Only use it where losing the note would not matter.
 3. On Unknown: save newSecrets, then probeBurnedNote.
 4. A melt's Confirmed means IN FLIGHT. NotePending means retry, not spent.
 5. Rotate immediately after claiming a minted note.
-6. Never log note URLs - the secret is in the query string.
+6. Never log note URLs - the secret is in the query string. A ck1 is a secret
+   too; a cp1, cs1 and cx1 are not, but a cx1 links every note on its branch.
+7. Compare notes by noteIdOf, never by the k1 string.
 
 ## Conformance
 
