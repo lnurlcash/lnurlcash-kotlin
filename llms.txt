@@ -96,6 +96,8 @@ cashNodeToCx1(node): Cx1   the part to hand out; it links every note on the
 deriveNotePubkey(P, chainCode, i: UInt)   watch-only; i any UInt, never
   hardened. t >= n is an error, never reduced: use the next index
 deriveNoteSecretKey(p, chainCode, i: UInt)   negates p first when P has odd y
+Java: both note derivation functions also accept a long index in 0..4294967295;
+out-of-range indices throw IllegalArgumentException. Kotlin UInt overloads remain.
 signNoteOwnership(sk) -> 65-byte hex   RFC6979, low-S, over the fixed
   "LNURLcash". encodeCk1 it for the wire
 recoverNoteOwnershipPubkey(sig) -> pk?

@@ -5,6 +5,13 @@ carry breaking changes; pin an exact version.
 
 ## 0.1.0 — unreleased
 
+### Java note derivation
+
+- Add `long` index overloads for `deriveNotePubkey` and `deriveNoteSecretKey`,
+  callable from Java under their ordinary names. They accept `0..4294967295`
+  and reject out-of-range values before converting to `UInt`. Existing Kotlin
+  `UInt` overloads and their JVM signatures are unchanged.
+
 ### A plain note is unsigned
 
 LUD-25 Part 2 certifies `cp1` notes only: a plain hash has nothing to attest
