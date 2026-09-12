@@ -131,6 +131,12 @@ class Part2VectorTest {
 
                 val secretKey = deriveNoteSecretKey(privateKey, chainCode, index)
                 assertEquals(note.str("noteSecretKey"), secretKey, at)
+                // Compile real Java calls and grade both long overloads against
+                // every vector, including indices above Integer.MAX_VALUE.
+                NoteDerivationJavaTest.assertDerivation(
+                    watched.pubkeyXOnly, privateKey, chainCode, note.long("index"),
+                    note.str("notePubkey"), note.str("noteSecretKey"),
+                )
                 // branchParity, graded against the facade's own answer: the
                 // holder's key is (p or n - p) + t, and which one it is is
                 // exactly what the parity says

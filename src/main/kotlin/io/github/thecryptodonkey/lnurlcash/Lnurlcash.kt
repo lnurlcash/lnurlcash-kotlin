@@ -291,6 +291,14 @@ public fun deriveNotePubkey(branchPubkeyXOnlyHex: String, chainCodeHex: String, 
     coreDeriveNotePubkey(branchPubkeyXOnlyHex, chainCodeHex, index)
 
 /**
+ * Java-callable overload of [deriveNotePubkey], with [index] in `0..4294967295`.
+ *
+ * @throws IllegalArgumentException if [index] is outside the unsigned 32-bit range.
+ */
+public fun deriveNotePubkey(branchPubkeyXOnlyHex: String, chainCodeHex: String, index: Long): String =
+    deriveNotePubkey(branchPubkeyXOnlyHex, chainCodeHex, checkedNoteIndex(index))
+
+/**
  * The secret key behind [deriveNotePubkey]. Bearer material.
  *
  * A branch key whose point has odd y is negated first. A `cx1` carries only x,
@@ -299,6 +307,20 @@ public fun deriveNotePubkey(branchPubkeyXOnlyHex: String, chainCodeHex: String, 
  */
 public fun deriveNoteSecretKey(branchPrivateKeyHex: String, chainCodeHex: String, index: UInt): String =
     coreDeriveNoteSecretKey(branchPrivateKeyHex, chainCodeHex, index)
+
+/**
+ * Java-callable overload of [deriveNoteSecretKey], with [index] in `0..4294967295`.
+ * Returns bearer material, just like the unsigned overload.
+ *
+ * @throws IllegalArgumentException if [index] is outside the unsigned 32-bit range.
+ */
+public fun deriveNoteSecretKey(branchPrivateKeyHex: String, chainCodeHex: String, index: Long): String =
+    deriveNoteSecretKey(branchPrivateKeyHex, chainCodeHex, checkedNoteIndex(index))
+
+private fun checkedNoteIndex(index: Long): UInt {
+    require(index in 0L..0xFFFF_FFFFL) { "index must be in 0..4294967295" }
+    return index.toUInt()
+}
 
 /**
  * The 65-byte ownership signature over the fixed message `LNURLcash`, as hex.

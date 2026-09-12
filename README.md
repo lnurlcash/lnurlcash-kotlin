@@ -159,6 +159,7 @@ val node = deriveCashAddressNode(deriveCashRoot(seedHex), "mint.example") // bea
 val branch = cashNodeToCx1(node)
 val cx1 = encodeCx1(branch.pubkeyXOnly, branch.chainCode)    // watch-only
 
+val i = 0u                                                // unsigned note index
 val pk = deriveNotePubkey(branch.pubkeyXOnly, branch.chainCode, i) // what a watcher derives
 val sk = deriveNoteSecretKey(node.take(64), node.drop(64), i)
 val ck1 = encodeCk1(signNoteOwnership(sk))                   // the bearer secret
@@ -167,6 +168,18 @@ val ck1 = encodeCk1(signNoteOwnership(sk))                   // the bearer secre
 client.rotateWithHash(info.callback, oldK1, encodeCp1(pk))
 
 verifyNoteSignature(ck1, amountMsat, cs1, mintPubkey)        // offline
+```
+
+From Java, the two note derivation functions have overloads taking a `long`
+index in `0..4294967295`; values outside that range throw
+`IllegalArgumentException`. The existing Kotlin `UInt` overloads remain available.
+
+```java
+String node = LnurlcashKt.deriveCashAddressNode(cashRoot, "mint.example");
+Cx1 branch = LnurlcashKt.cashNodeToCx1(node);
+long index = 0L;
+String pk = LnurlcashKt.deriveNotePubkey(branch.getPubkeyXOnly(), branch.getChainCode(), index);
+String sk = LnurlcashKt.deriveNoteSecretKey(node.substring(0, 64), node.substring(64), index);
 ```
 
 The wire takes both kinds. A `ck1` goes anywhere a k1 does. A `cp1` goes
