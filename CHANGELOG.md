@@ -3,7 +3,7 @@
 Semantic versioning. While the LUD-25 draft is unmerged, `0.x` minor bumps may
 carry breaking changes; pin an exact version.
 
-## 0.1.0 — unreleased
+## 0.1.0 — 2026-09-12
 
 ### Java note derivation
 
