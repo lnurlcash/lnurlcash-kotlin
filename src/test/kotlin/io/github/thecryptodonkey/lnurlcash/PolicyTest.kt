@@ -12,8 +12,8 @@ import kotlinx.serialization.json.jsonObject
 import uniffi.lnurlcash_core.LnurlcashException
 
 /**
- * What a mutation owes, and what a withdrawRequest must carry, since LUD-25
- * Part 2 made a plain note unsigned.
+ * What a mutation owes, and what a withdrawRequest must carry across the
+ * legacy hash and Part 2 key forms.
  *
  * All of it through [LnurlcashClient] over a loopback service. The rules
  * themselves live in the core and are graded there; what is unique to this
@@ -62,7 +62,7 @@ class PolicyTest {
     }
 
     @Test
-    fun `an unsigned hash output is ok by default`() {
+    fun `the default tolerates a no-signer legacy hash output`() {
         val client = LnurlcashClient()
         val outcomes = listOf(
             against(json(bareOk)) { client.rotate(it, k1) },
@@ -81,9 +81,9 @@ class PolicyTest {
                 is HashedSplitNotes -> listOf(value.signature, value.changeSignature)
                 else -> error("a result this test does not know: $value")
             }
-            assertTrue(signatures.all { it == null }, "a plain note is unsigned: $signatures")
+            assertTrue(signatures.all { it == null }, "no-signer mode returned proof: $signatures")
         }
-        // and a Part 1 signature a mint still issues passes through as sent
+        // and the reference mint's raw Part 1 signature passes through as sent
         val (signed, _) = against(json(firstSigned)) { client.rotateWithHash(it, k1, hash) }
         assertEquals(MutationOutcome.Confirmed(HashedNote(signature)), signed)
     }
@@ -118,7 +118,7 @@ class PolicyTest {
         assertTrue(uncertified is MutationOutcome.Unverifiable, "got $uncertified")
         assertTrue("change" in uncertified.message, uncertified.message)
 
-        // the other way round the change is a hash, owed nothing
+        // the other way round the change is a legacy hash accepted in no-signer mode
         val (plainChange, _) = against(json(firstSigned)) {
             client.splitWithHash(it, listOf(k1), 5_000, cp1s[0], change)
         }

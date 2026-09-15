@@ -53,7 +53,9 @@ class Part2VectorTest {
         assertEquals("m/139'/1'/d1/d2/d3/d4", conventions.str("addressBranch"))
         assertEquals("m/139'/1'/0", conventions.str("hashingKey"))
         assertEquals("LNURLcash", conventions.str("ownershipMessage"))
+        assertEquals("LNURLcash:<register|unregister>:<username>", conventions.str("addressProofMessage"))
         assertEquals("LNURLcash:<amount_msat>:<hex(pk)>", conventions.str("certificateMessage"))
+        assertEquals("cs || BOLT11_amount_suffix(amount_msat)", conventions.str("certificateHrp"))
         // The digest every ownership signature is made over. The facade has no
         // function for it; that every signature below comes out byte for byte
         // is what ties signNoteOwnership to it, since RFC6979 draws the nonce
@@ -62,6 +64,24 @@ class Part2VectorTest {
             conventions.str("ownershipDigest"),
             lightningSignedDigest(conventions.str("ownershipMessage")).hex(),
         )
+    }
+
+    @Test
+    fun `address proofs are action and username bound to index zero`() {
+        val proofs = part2.array("addressProofs").map { it.jsonObject }
+        assertTrue(proofs.isNotEmpty())
+        for (proof in proofs) {
+            val action = proof.str("action")
+            val username = proof.str("username")
+            val message = "LNURLcash:$action:$username"
+            assertEquals(message, proof.str("message"))
+            assertEquals(lightningSignedDigest(message).hex(), proof.str("digest"))
+            assertEquals(
+                proof.str("signature"),
+                signAddressProof(proof.str("indexZeroSecretKey"), action, username),
+                "$action/$username",
+            )
+        }
     }
 
     @Test
@@ -205,9 +225,21 @@ class Part2VectorTest {
             val ck1 = ck1Of[pubkey] ?: error("$at: the certificate names a note in the file")
             assertEquals(pubkey, noteIdOf(ck1), at)
 
-            assertEquals(cs1, encodeCs1(signature), at)
-            assertEquals(signature, decodeCs1(cs1), at)
-            assertTrue(isCs1(cs1), at)
+            assertEquals(cs1, encodeCs1WithAmount(amount, signature), at)
+            assertEquals(Cs1(amount, signature), decodeCs1WithAmount(cs1), at)
+            assertTrue(isCs1WithAmount(cs1), at)
+            assertEquals(signature, decodeAnyCs1(cs1), at)
+            assertTrue(isAnyCs1(cs1), at)
+            assertNull(decodeCs1(cs1), "$at: a current certificate is not legacy")
+            assertFalse(isCs1(cs1), "$at: a current certificate is not legacy")
+
+            val legacy = encodeCs1(signature)
+            assertEquals(signature, decodeCs1(legacy), "$at: legacy remains readable")
+            assertTrue(isCs1(legacy), "$at: legacy remains readable")
+            assertEquals(signature, decodeAnyCs1(legacy), "$at: migration decoder")
+            assertTrue(isAnyCs1(legacy), "$at: migration recogniser")
+            assertNull(decodeCs1WithAmount(legacy), "$at: legacy carries no amount")
+            assertFalse(isCs1WithAmount(legacy), "$at: legacy carries no amount")
             // a certificate and a spend share a layout but never a prefix
             assertFalse(isCk1(cs1), at)
             assertFalse(isCs1(ck1), at)
@@ -234,7 +266,7 @@ class Part2VectorTest {
             val (decoded, claims) = when (type) {
                 "cp1" -> decodeCp1(value) to isCp1(value)
                 "ck1" -> decodeCk1(value) to isCk1(value)
-                "cs1" -> decodeCs1(value) to isCs1(value)
+                "cs1" -> decodeCs1WithAmount(value)?.signature to isCs1WithAmount(value)
                 "cx1" -> decodeCx1(value)?.let { it.pubkeyXOnly + it.chainCode } to isCx1(value)
                 else -> error("a string type this library does not know: $type")
             }

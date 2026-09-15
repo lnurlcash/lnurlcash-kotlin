@@ -26,9 +26,8 @@ public data class NoteInfo(
 /**
  * A note this wallet now holds, whose secret the service has never seen.
  *
- * [signature] is null for this plain hash note unless the mint still issues
- * the old Part 1 signature over it: LUD-25 Part 2 certifies `cp1` notes only,
- * so a conforming mint returns none, and that is the spec rather than a fault.
+ * [signature] is the reference mint's raw Part 1 signature for this legacy
+ * hash output, or null when a no-signer mint is admitted by policy.
  */
 public data class RotatedNote(
     public val k1: String,
@@ -72,8 +71,8 @@ public data class MeltReceipt(
  * certificate, and a mint that confirms without one gets
  * [MutationOutcome.Unverifiable] instead. Check it with
  * [verifyNoteSignatureHash] against [decodeCp1] of the output, or with
- * [verifyNoteSignature] against the note's `ck1`. For a hash output it is null
- * unless the mint still issues the old Part 1 signature over the hash.
+ * [verifyNoteSignature] against the note's `ck1`. For a hash output it is the
+ * raw Part 1 signature, or null when no-signer mode is admitted.
  */
 public data class HashedNote(
     public val signature: String?,
@@ -100,6 +99,12 @@ public data class HashedSplitNotes(
 public data class Cx1(
     public val pubkeyXOnly: String,
     public val chainCode: String,
+)
+
+/** The amount and 65-byte signature carried by a current amount-bearing `cs1`. */
+public data class Cs1(
+    public val amountMsat: Long,
+    public val signature: String,
 )
 
 /** A note that was settled against what the service says it is really worth. */
@@ -278,8 +283,8 @@ public sealed interface MutationOutcome<out T> {
      * keep dealing with a mint that issues notes nobody can check.
      *
      * Produced for an uncertified `cp1` output whatever the client's options
-     * say. For a plain hash output, which is unsigned by design, only when the
-     * client was built with `requireSignatures = true`. [newSecrets] is empty
+     * say. For a legacy hash output, only when the client was built with
+     * `requireSignatures = true` and a no-signer mint omitted it. [newSecrets] is empty
      * for a mutation into outputs the caller named, for the same reason as on
      * [Unknown].
      */

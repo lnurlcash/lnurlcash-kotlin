@@ -28,4 +28,12 @@ esac
 (cd "$CORE" && cargo run --quiet --features bindgen --bin uniffi-bindgen -- \
   generate --library "target/release/$LIB" --language kotlin --out-dir "$OUT")
 
+# UniFFI currently emits trailing spaces on some generated declarations.
+# Normalise them here so the checked-in binding is reproducible and also
+# passes the repository's whitespace gate without a separate formatter.
+GENERATED="$OUT/uniffi/lnurlcash_core/lnurlcash_core.kt"
+NORMALISED="$(mktemp "${GENERATED}.XXXXXX")"
+sed 's/[[:space:]]*$//' "$GENERATED" > "$NORMALISED"
+mv "$NORMALISED" "$GENERATED"
+
 echo "bindings regenerated into $OUT/uniffi/"

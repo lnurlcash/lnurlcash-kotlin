@@ -59,11 +59,12 @@ would otherwise mint a self-contained fake note that verifies against
 nothing.
 
 **A service that inflates a note.** A `cp1` note's certificate commits to the
-amount, and so does a Part 1 signature where a mint still issues one. A
-service reporting more than it signed fails verification, without the holder
-contacting anyone. A plain hash note carries no signature by design since the
-LUD-25 Part 2 rewrite, so this defence belongs to the `cp1` note: hold one
-where it matters.
+amount, and so does the raw Part 1 signature returned by the reference mint
+when it has a signer. A service reporting more than it signed fails
+verification, without the holder contacting anyone. The tolerant default also
+admits a legacy hash output from a no-signer mint; that particular note has no
+offline amount proof. Require signatures, or use a certified `cp1` note, where
+that defence matters.
 
 **A service that leaves a `cp1` note uncertified.** A `cp1` output is owed its
 `cs1` whatever the client's options say, so a confirmed rotate, split or merge

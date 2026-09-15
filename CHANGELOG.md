@@ -5,6 +5,30 @@ carry breaking changes; pin an exact version.
 
 ## 0.1.0 — 2026-09-12
 
+### Reference address proofs and compact note URLs
+
+- Add `signAddressProof` for the reference mint's signed
+  register/update/unregister flow, using the address branch's index-0 key and
+  binding the proof to both action and normalised username.
+- Read the declared amount from an amount-bearing `cs1` when no separate
+  `amount` exists, and omit that duplicate parameter when rebuilding a URL
+  carrying a current certificate.
+- Regenerate the checked-in UniFFI bindings and grade both behaviours against
+  `lnurlcash-conformance` 0.11.0 vectors.
+
+### Amount-bearing mint certificates
+
+- Add `encodeCs1WithAmount`, `decodeCs1WithAmount` and `isCs1WithAmount` for
+  the current wire format, whose human-readable prefix carries the amount with
+  BOLT 11 amount rules. `decodeCs1WithAmount` returns the new `Cs1` data class.
+- Keep `encodeCs1`, `decodeCs1` and `isCs1` unchanged for legacy fixed-prefix
+  certificates. Add `decodeAnyCs1` and `isAnyCs1` for migrations that must
+  accept both formats.
+- Signature verification accepts both formats, matching the reference kit;
+  callers can decode and compare the carried amount separately when needed.
+- Regenerate the checked-in UniFFI bindings from the additive Rust core API and
+  grade the current format against `lnurlcash-conformance` 0.11.0 vectors.
+
 ### Java note derivation
 
 - Add `long` index overloads for `deriveNotePubkey` and `deriveNoteSecretKey`,
@@ -12,19 +36,17 @@ carry breaking changes; pin an exact version.
   and reject out-of-range values before converting to `UInt`. Existing Kotlin
   `UInt` overloads and their JVM signatures are unchanged.
 
-### A plain note is unsigned
+### No-signer legacy compatibility
 
-LUD-25 Part 2 certifies `cp1` notes only: a plain hash has nothing to attest
-to without disclosing the secret behind it. The reference mint and moneyer now
-answer a rotate, split or merge to a hash output with a bare
-`{"status":"OK"}`, and this library follows, as the core and the other kits
-do. `core.sha` moves to the core commit that made the change, and `bindings/`
-is regenerated against it in the same change.
+The reference mint signs a legacy hash output with a raw Part 1 signature when
+a signer is available and may omit it in no-signer mode. The committed
+TypeScript reference wallet requires it; this library keeps a tolerant default
+and exposes the strict behaviour as policy. `bindings/` is regenerated against
+the corresponding core API.
 
-- `LnurlcashClient(requireSignatures)` now defaults to **false**. A hash output
-  that comes back unsigned is the spec, not a fault: its signature is null and
-  the outcome is `Confirmed`. Set it true to keep demanding the old Part 1
-  signature over the hash.
+- `LnurlcashClient(requireSignatures)` now defaults to **false**. In no-signer
+  mode the signature is null and the outcome is `Confirmed`. Set it true to
+  match the strict reference wallet and demand the raw Part 1 signature.
 - A `cp1` output is owed its `cs1` certificate whatever the options say. A
   rotate, split or merge naming one (sent as `p1`, or `p2` for a split's
   change) that comes back without `sig` (or `sig2` for the change) is
@@ -194,9 +216,9 @@ and the adversarial mock mint.
 
 **A note owed a certificate is refused without one, and only that note.** A
 `cp1` note is owed its `cs1`, so a confirmed mutation to one without it
-returns `MutationOutcome.Unverifiable` whatever the options say. A plain hash
-note is unsigned by design and passes, unless `requireSignatures` asks for the
-old Part 1 signature. And `fetchNoteInfo` throws for a `withdrawRequest`
+returns `MutationOutcome.Unverifiable` whatever the options say. A legacy hash
+may be unsigned in no-signer mode and passes under the tolerant default, unless
+`requireSignatures` asks for the raw Part 1 signature. And `fetchNoteInfo` throws for a `withdrawRequest`
 publishing no valid `mintPubkey`, unless `requireMintPubkey` is off.
 
 `Unverifiable` is its own case rather than a `Rejected`, which would say the
