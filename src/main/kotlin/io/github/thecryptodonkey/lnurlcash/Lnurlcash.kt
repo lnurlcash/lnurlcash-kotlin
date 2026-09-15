@@ -1,6 +1,7 @@
 package io.github.thecryptodonkey.lnurlcash
 
 import uniffi.lnurlcash_core.FfiCx1
+import uniffi.lnurlcash_core.FfiCs1
 import uniffi.lnurlcash_core.FfiMintFee
 import uniffi.lnurlcash_core.applyMintFee as coreApplyMintFee
 import uniffi.lnurlcash_core.buildNoteUrl as coreBuildNoteUrl
@@ -13,6 +14,8 @@ import uniffi.lnurlcash_core.cashSecretAt as coreCashSecretAt
 import uniffi.lnurlcash_core.decodeCk1 as coreDecodeCk1
 import uniffi.lnurlcash_core.decodeCp1 as coreDecodeCp1
 import uniffi.lnurlcash_core.decodeCs1 as coreDecodeCs1
+import uniffi.lnurlcash_core.decodeAnyCs1 as coreDecodeAnyCs1
+import uniffi.lnurlcash_core.decodeCs1WithAmount as coreDecodeCs1WithAmount
 import uniffi.lnurlcash_core.decodeCx1 as coreDecodeCx1
 import uniffi.lnurlcash_core.deriveCashAddressNode as coreDeriveCashAddressNode
 import uniffi.lnurlcash_core.deriveCashChild as coreDeriveCashChild
@@ -29,11 +32,13 @@ import uniffi.lnurlcash_core.deriveNoteSecretKey as coreDeriveNoteSecretKey
 import uniffi.lnurlcash_core.encodeCk1 as coreEncodeCk1
 import uniffi.lnurlcash_core.encodeCp1 as coreEncodeCp1
 import uniffi.lnurlcash_core.encodeCs1 as coreEncodeCs1
+import uniffi.lnurlcash_core.encodeCs1WithAmount as coreEncodeCs1WithAmount
 import uniffi.lnurlcash_core.encodeCx1 as coreEncodeCx1
 import uniffi.lnurlcash_core.generateNoteSecret as coreGenerateNoteSecret
 import uniffi.lnurlcash_core.grossUpForMintFee as coreGrossUpForMintFee
 import uniffi.lnurlcash_core.hashK1 as coreHashK1
 import uniffi.lnurlcash_core.isAllowedServiceUrl as coreIsAllowedServiceUrl
+import uniffi.lnurlcash_core.isAnyCs1 as coreIsAnyCs1
 import uniffi.lnurlcash_core.isBolt11Invoice as coreIsBolt11Invoice
 import uniffi.lnurlcash_core.isCk1 as coreIsCk1
 import uniffi.lnurlcash_core.isCp1 as coreIsCp1
@@ -53,6 +58,7 @@ import uniffi.lnurlcash_core.resolveMintInput as coreResolveMintInput
 import uniffi.lnurlcash_core.resolveNoteInput as coreResolveNoteInput
 import uniffi.lnurlcash_core.sameInvoice as coreSameInvoice
 import uniffi.lnurlcash_core.signNoteOwnership as coreSignNoteOwnership
+import uniffi.lnurlcash_core.signAddressProof as coreSignAddressProof
 import uniffi.lnurlcash_core.verifyNoteSignature as coreVerifyNoteSignature
 import uniffi.lnurlcash_core.verifyNoteSignatureHash as coreVerifyNoteSignatureHash
 import uniffi.lnurlcash_core.withNewK1 as coreWithNewK1
@@ -178,9 +184,11 @@ public fun isPreimage(value: String): Boolean = coreIsPreimage(value)
  * the wrong ordering recovers an unrelated key that cannot match.
  *
  * [k1] may be a Part 2 `ck1`: its id is the key it recovers to, found locally,
- * so checking one needs no network either. [signatureHex] may be a `cs1`,
- * which is the same 65 bytes encoded. A k1 that is neither 32 bytes of hex nor
- * a `ck1` that recovers has no id to check, and is a plain `false`.
+ * so checking one needs no network either. [signatureHex] may be a current
+ * amount-bearing `cs1`, a legacy fixed-prefix `cs1`, or the same 65 bytes as
+ * hex. Decode the certificate separately when its carried amount is needed.
+ * A k1 that is neither 32 bytes of hex nor a `ck1` that recovers has no id to
+ * check, and is a plain `false`.
  */
 public fun verifyNoteSignature(
     k1: String,
@@ -247,16 +255,46 @@ public fun decodeCk1(value: String): String? = coreDecodeCk1(value)
 
 public fun isCk1(value: String): Boolean = coreIsCk1(value)
 
-/**
- * A mint's 65-byte certificate as a `cs1`. It proves issuance and spends
- * nothing, so it can travel with a note in the open.
- */
+/** A legacy fixed-prefix `cs1`, retained so existing callers keep working. */
 public fun encodeCs1(signatureHex: String): String = coreEncodeCs1(signatureHex)
 
-/** The 65 bytes inside a `cs1`, as hex, or null for anything that is not one. */
+/** Decode only a legacy fixed-prefix `cs1`. New code should use [decodeCs1WithAmount]. */
 public fun decodeCs1(value: String): String? = coreDecodeCs1(value)
 
+/** True only for a legacy fixed-prefix `cs1`. */
 public fun isCs1(value: String): Boolean = coreIsCs1(value)
+
+/**
+ * Encode a current mint certificate with its amount in the human-readable
+ * prefix, using the same amount suffix rules as BOLT 11.
+ *
+ * The certificate proves issuance and spends nothing, so it can travel with a
+ * note in the open. The signature itself must cover the same amount; encoding
+ * does not sign or verify it.
+ */
+public fun encodeCs1WithAmount(amountMsat: Long, signatureHex: String): String {
+    require(amountMsat >= 0) { "amountMsat must be non-negative" }
+    return coreEncodeCs1WithAmount(amountMsat.toULong(), signatureHex)
+}
+
+/**
+ * Decode a current amount-bearing `cs1`, including the amount carried by its
+ * prefix. Returns null when the wire amount cannot be represented by this
+ * facade's signed [Long] amount type.
+ */
+public fun decodeCs1WithAmount(value: String): Cs1? =
+    coreDecodeCs1WithAmount(value)
+        ?.takeIf { it.amountMsat <= Long.MAX_VALUE.toULong() }
+        ?.toKotlin()
+
+/** True only for a current amount-bearing `cs1`. */
+public fun isCs1WithAmount(value: String): Boolean = decodeCs1WithAmount(value) != null
+
+/** Decode the signature from either a current or legacy `cs1`. */
+public fun decodeAnyCs1(value: String): String? = coreDecodeAnyCs1(value)
+
+/** True for either a current or legacy `cs1`. */
+public fun isAnyCs1(value: String): Boolean = coreIsAnyCs1(value)
 
 /**
  * A watch-only branch as a `cx1`: its x-only public key followed by its chain
@@ -331,6 +369,16 @@ private fun checkedNoteIndex(index: Long): UInt {
  * Deterministic is not unique, though. See [noteIdOf].
  */
 public fun signNoteOwnership(secretKeyHex: String): String = coreSignNoteOwnership(secretKeyHex)
+
+/**
+ * A register/update or unregister proof by the address branch's index-0 key,
+ * as raw `r || s || recovery-id` hex.
+ *
+ * [username] must be the same normalised value sent to the service. Only the
+ * reference actions `register` and `unregister` are accepted.
+ */
+public fun signAddressProof(indexZeroSecretKeyHex: String, action: String, username: String): String =
+    coreSignAddressProof(indexZeroSecretKeyHex, action, username)
 
 /**
  * The note's x-only public key, recovered offline from its 65-byte ownership
@@ -467,3 +515,5 @@ internal fun MintFee.toFfi(): FfiMintFee =
     FfiMintFee(baseFeeMsat = baseFeeMsat.toULong(), feePpm = feePpm.toULong())
 
 internal fun FfiCx1.toKotlin(): Cx1 = Cx1(pubkeyXOnly = pubkeyXOnly, chainCode = chainCode)
+
+internal fun FfiCs1.toKotlin(): Cs1 = Cs1(amountMsat = amountMsat.toLong(), signature = signature)

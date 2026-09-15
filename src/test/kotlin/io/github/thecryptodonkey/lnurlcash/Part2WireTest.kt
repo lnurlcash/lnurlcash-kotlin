@@ -192,9 +192,8 @@ class Part2WireTest {
             assertTrue(outcome is MutationOutcome.Unverifiable, "got $outcome")
             assertTrue(outcome.newSecrets.isEmpty(), "${outcome.newSecrets}")
         }
-        // A hash output is owed nothing, so the same bare OK is a success, and
-        // only a client demanding the old Part 1 signature refuses it - still
-        // with nothing to hand back.
+        // The tolerant policy preserves a no-signer legacy hash output; strict
+        // reference-wallet parity refuses it, still with nothing to hand back.
         val hash = hashK1("22".repeat(32))
         CannedService("""{"status":"OK"}""").use { service ->
             val outcome = runBlocking { LnurlcashClient().rotateWithHash("${service.url}/w/cb", k1, hash) }
@@ -245,7 +244,7 @@ class Part2WireTest {
     @Test
     fun `nothing else is asked for an invoice`() {
         val signature = notes[0].str("ownershipSignature")
-        for (bad in listOf(notes[0].str("ck1"), encodeCs1(signature), "not-a-32-byte-hash")) {
+        for (bad in listOf(notes[0].str("ck1"), encodeCs1WithAmount(21_000, signature), "not-a-32-byte-hash")) {
             CannedService(invoice).use { service ->
                 assertFailsWith<LnurlcashException.RequestRefused>(bad) {
                     runBlocking { LnurlcashClient().requestMintInvoiceWithHash("${service.url}/p/cb", 21_000, bad) }
@@ -267,7 +266,7 @@ class Part2WireTest {
     fun `nothing else has a note id`() {
         val ck1 = notes[0].str("ck1")
         val corrupted = ck1.dropLast(1) + if (ck1.last() == 'q') 'p' else 'q'
-        val cs1Shaped = encodeCs1(notes[0].str("ownershipSignature"))
+        val cs1Shaped = encodeCs1WithAmount(21_000, notes[0].str("ownershipSignature"))
         for (bad in listOf("", "zz", "11".repeat(31), notes[0].str("cp1"), cs1Shaped, corrupted)) {
             assertNull(noteIdOf(bad), bad)
             assertNull(noteLookupOf(bad), bad)

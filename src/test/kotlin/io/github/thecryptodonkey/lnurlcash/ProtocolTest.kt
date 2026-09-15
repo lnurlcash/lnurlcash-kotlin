@@ -379,13 +379,10 @@ class ProtocolTest {
         }
 
     @Test
-    fun `an unsigned plain note is the spec, not a fault`() =
+    fun `a no-signer legacy mint is tolerated by default`() =
         withMint("--signatures=false") { mint, client ->
-            // LUD-25 Part 2 certifies cp1 notes only: a hash has nothing to
-            // attest to without disclosing the secret behind it. So a mint
-            // answering a plain rotate or split with a bare OK is following the
-            // spec, and the notes come back unsigned - which is what a plain
-            // note is.
+            // The tolerant default preserves landed legacy outputs when the
+            // reference mint has no signer; strict wallet parity is below.
             val k1 = secret(32)
             mint.credit(k1, 21_000)
 
@@ -405,8 +402,8 @@ class ProtocolTest {
     @Test
     fun `requiring signatures refuses an unsigned rotate without losing the note`() =
         withMint("--signatures=false") { mint, _ ->
-            // A caller who still wants the old Part 1 signature over the hash
-            // can ask for it. The mutation LANDED though, and the fresh secret
+            // A caller matching the committed reference wallet can demand the
+            // raw Part 1 signature. The mutation LANDED though, and the fresh secret
             // is the only key to the note it minted - so it is its own
             // outcome, carrying them.
             val client = LnurlcashClient(requireSignatures = true)

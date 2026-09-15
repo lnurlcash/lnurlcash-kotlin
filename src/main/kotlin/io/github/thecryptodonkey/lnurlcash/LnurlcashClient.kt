@@ -58,14 +58,11 @@ import uniffi.lnurlcash_core.verifyRequest
  * @param secretSource where replacement note secrets come from. Substitute for
  *   a hardware RNG - and note that a predictable secret is a note anyone can
  *   spend.
- * @param requireSignatures also demand the old Part 1 signature over a plain
- *   hash output, as every mint did before the Part 2 rewrite. Off by default:
- *   LUD-25 Part 2 certifies `cp1` notes only, because a hash has nothing to
- *   attest to without disclosing the secret behind it, so a conforming service
- *   answers a rotate, split or merge to a hash with a bare `{"status":"OK"}`
- *   and the note comes back with its signature null. A `cp1` output is owed
- *   its `cs1` certificate whatever this says. With it on, an unsigned hash
- *   output is [MutationOutcome.Unverifiable], carrying the fresh secrets.
+ * @param requireSignatures demand the raw Part 1 signature over a legacy hash
+ *   output, matching the committed reference wallet. Off by default to admit
+ *   the reference mint's no-signer mode. A `cp1` output is owed its `cs1`
+ *   certificate whatever this says. With it on, an unsigned hash output is
+ *   [MutationOutcome.Unverifiable], carrying the fresh secrets.
  * @param requireMintPubkey refuse a `withdrawRequest` that publishes no
  *   `mintPubkey`, or one that is not a 33-byte compressed key: the key a `cp1`
  *   note's certificate verifies against. On by default. Turn it off only for a

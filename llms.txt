@@ -29,10 +29,11 @@ second real burn.
 
 ## CRITICAL: what a service owes a note (LUD-25 Part 2)
 
-A plain hash note is UNSIGNED by design: Part 2 certifies cp1 notes only, so a
-rotate/split/merge to a hash output comes back with its signature null and no
-error. A cp1 output is owed its cs1 in sig (sig2 for a split's change) ALWAYS,
-whatever the options; without it the outcome is MutationOutcome.Unverifiable.
+A reference mint with a signer returns a raw Part 1 signature for a legacy hash
+output. The tolerant default verifies that signature when present but also
+admits its omission by a no-signer mint. A cp1 output is owed its cs1 in sig
+(sig2 for a split's change) ALWAYS, whatever the options; without it the
+outcome is MutationOutcome.Unverifiable.
 That means the mutation LANDED, so the note is REAL - persist newSecrets (empty
 from a *WithHash call: the caller holds that key) before anything else.
 fetchNoteInfo throws for a withdrawRequest with no valid mintPubkey.
@@ -84,7 +85,11 @@ Amounts are Long milli-satoshis everywhere (the bindings' ULong is converted).
 Hex in, hex out, as everywhere else here. Decoders return null, never throw.
 encodeCp1/decodeCp1/isCp1   note pubkey, 32-byte x-only, bech32m "cp"
 encodeCk1/decodeCk1/isCk1   bearer secret, 65-byte r||s||recid, "ck". SPENDS
-encodeCs1/decodeCs1/isCs1   mint certificate over hex(pk), same layout, "cs"
+encodeCs1WithAmount/decodeCs1WithAmount/isCs1WithAmount
+  current mint certificate, Cs1(amountMsat, signature); HRP is "cs" plus the
+  BOLT11 amount suffix. Signature covers LNURLcash:<amount_msat>:<hex(pk)>.
+encodeCs1/decodeCs1/isCs1   LEGACY fixed "cs" HRP only
+decodeAnyCs1/isAnyCs1       migration helpers accepting either certificate
 encodeCx1/decodeCx1/isCx1   watch-only branch, Cx1(pubkeyXOnly, chainCode), "cx"
   No length limit; all-uppercase accepted; mixed case, a bech32 (not
   bech32m) checksum, the wrong hrp or length and non-zero padding refused
@@ -100,6 +105,9 @@ Java: both note derivation functions also accept a long index in 0..4294967295;
 out-of-range indices throw IllegalArgumentException. Kotlin UInt overloads remain.
 signNoteOwnership(sk) -> 65-byte hex   RFC6979, low-S, over the fixed
   "LNURLcash". encodeCk1 it for the wire
+signAddressProof(indexZeroSk, action, username) -> 65-byte hex
+  reference address register/update/unregister proof; exact message
+  LNURLcash:<register|unregister>:<normalised username>; raw r||s||recid
 recoverNoteOwnershipPubkey(sig) -> pk?
 noteIdOf(k1) -> id?   sha256(k1) for a secret, the recovered key for a ck1.
   One note has many valid ck1 strings: compare notes by this, never by k1
@@ -127,7 +135,7 @@ MutationOutcome.Unknown(newSecrets, message, cause) MAYBE - persist newSecrets
                                                     FIRST, then probeBurnedNote
 MutationOutcome.Unverifiable(newSecrets, message)   it LANDED, and a cp1 output
                                                     came back with no cs1 (or a
-                                                    hash output unsigned under
+                                                    legacy hash omitted sig under
                                                     requireSignatures). The note
                                                     is REAL - persist newSecrets
 
