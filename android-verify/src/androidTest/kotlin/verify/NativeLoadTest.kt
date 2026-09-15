@@ -1,11 +1,11 @@
-package io.github.thecryptodonkey.lnurlcash.verify
+package com.lnurlcash.verify
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import io.github.thecryptodonkey.lnurlcash.deriveCashRoot
-import io.github.thecryptodonkey.lnurlcash.deriveCashSecret
-import io.github.thecryptodonkey.lnurlcash.hashK1
-import io.github.thecryptodonkey.lnurlcash.isAllowedServiceUrl
-import io.github.thecryptodonkey.lnurlcash.verifyNoteSignature
+import com.lnurlcash.deriveCashRoot
+import com.lnurlcash.deriveCashSecret
+import com.lnurlcash.hashK1
+import com.lnurlcash.isAllowedServiceUrl
+import com.lnurlcash.verifyNoteSignature
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

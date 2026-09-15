@@ -145,7 +145,7 @@ to that commit and `bindings/` is regenerated against it in the same change.
 
 - The jar now carries the native core for linux-x86-64, linux-aarch64,
   darwin-x86-64, darwin-aarch64 and win32-x86-64, under the resource prefixes
-  JNA computes, so `implementation("io.github.thecryptodonkey:lnurlcash-kotlin")`
+  JNA computes, so `implementation("com.lnurlcash:lnurlcash-kotlin")`
   is all a consumer needs. No sibling checkout, no `jna.library.path`, no
   `cargo` on the machine.
 - The bindings module publishes as `lnurlcash-kotlin-bindings` and arrives

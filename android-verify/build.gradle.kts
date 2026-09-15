@@ -11,11 +11,11 @@ plugins {
 }
 
 android {
-    namespace = "io.github.thecryptodonkey.lnurlcash.verify"
+    namespace = "com.lnurlcash.verify"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "io.github.thecryptodonkey.lnurlcash.verify"
+        applicationId = "com.lnurlcash.verify"
         minSdk = 21
         targetSdk = 35
         versionCode = 1
@@ -38,7 +38,7 @@ kotlin {
 
 dependencies {
     // The whole point: one coordinate, resolved as a real consumer would.
-    implementation("io.github.thecryptodonkey:lnurlcash-kotlin-android:0.1.0")
+    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.1.0")
 
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")

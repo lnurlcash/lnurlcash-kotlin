@@ -1,4 +1,4 @@
-package io.github.thecryptodonkey.lnurlcash
+package com.lnurlcash
 
 import java.io.BufferedReader
 import java.io.InputStreamReader

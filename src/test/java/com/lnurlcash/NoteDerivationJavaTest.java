@@ -1,4 +1,4 @@
-package io.github.thecryptodonkey.lnurlcash;
+package com.lnurlcash;
 
 import org.junit.jupiter.api.Test;
 

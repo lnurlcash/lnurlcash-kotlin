@@ -1,4 +1,4 @@
-package io.github.thecryptodonkey.lnurlcash
+package com.lnurlcash
 
 import java.math.BigInteger
 import java.security.MessageDigest

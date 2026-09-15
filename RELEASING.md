@@ -1,12 +1,12 @@
 # Releasing lnurlcash-kotlin
 
-Two coordinates go to Maven Central together:
+Three coordinates go to Maven Central together:
 
 | Coordinate | What it is |
 |---|---|
-| `io.github.thecryptodonkey:lnurlcash-kotlin` | the library a JVM project depends on |
-| `io.github.thecryptodonkey:lnurlcash-kotlin-bindings` | generated UniFFI bindings, and the native core compiled for six desktop platforms |
-| `io.github.thecryptodonkey:lnurlcash-kotlin-android` | an aar: the same Kotlin, plus the core for four Android ABIs under `jni/` |
+| `com.lnurlcash:lnurlcash-kotlin` | the library a JVM project depends on |
+| `com.lnurlcash:lnurlcash-kotlin-bindings` | generated UniFFI bindings, and the native core compiled for six desktop platforms |
+| `com.lnurlcash:lnurlcash-kotlin-android` | an aar: the same Kotlin, plus the core for four Android ABIs under `jni/` |
 
 A JVM project names the first and gets the second transitively; an Android
 project names the third and gets nothing else. The android artifact is
@@ -49,11 +49,12 @@ Portal.
 
 ### 1. Claim the namespace
 
-`io.github.thecryptodonkey` is verified by proving control of the GitHub
-account. On [central.sonatype.com](https://central.sonatype.com), add the
-namespace; it hands back a temporary repository name. Create a public repo with
-exactly that name under `TheCryptoDonkey`, press verify, delete the repo. The
-namespace is then permanently yours.
+`com.lnurlcash` is owned by the LNURLcash project rather than any maintainer's
+personal account. On [central.sonatype.com](https://central.sonatype.com), add
+that namespace, copy the verification key it supplies, and publish it as the
+requested DNS TXT record on `lnurlcash.com`. Press verify only after the TXT
+record resolves publicly. Add each maintainer to the resulting Central
+organisation with their own account; do not share a Portal login.
 
 ### 2. A Portal token
 
@@ -67,14 +68,24 @@ Central rejects an unsigned deployment, and the signature is the only thing
 tying a jar on Central to this repo.
 
 ```bash
-gpg --quick-generate-key "TheCryptoDonkey <TheCryptoDonkey@users.noreply.github.com>" rsa4096 sign 2y
+gpg --quick-generate-key "LNURLcash Release <releases@lnurlcash.com>" rsa4096 sign 2y
 gpg --list-secret-keys --keyid-format=long
 gpg --keyserver keyserver.ubuntu.com --send-keys <KEY_ID>   # Central checks this
 gpg --armor --export-secret-keys <KEY_ID>                   # the secret below
 ```
 
-Publish the *public* key to a keyserver, and keep the armoured *private* key
-out of everything except the repository secret.
+Use a strong passphrase and let GPG prompt for it; never put it on a command
+line. Publish the *public* key to a keyserver. Put the operational armoured
+private key only in the protected GitHub environment below.
+
+For maintainer recovery, keep one passphrase-encrypted private-key export, its
+revocation certificate, the public key and the full fingerprint under
+`LNURLcash/release-signing/maven` in Proton Drive. Share the folder by direct
+email invitation with named maintainers, never by a public link. Keep the
+passphrase separately in a shared Proton Pass vault so compromise of one store
+does not disclose both factors. Portal tokens are revocable CI credentials:
+keep the active token in GitHub, not in the Drive backup, and generate a new one
+when it needs replacing.
 
 ### 4. Secrets, on a protected environment
 
@@ -88,6 +99,11 @@ eyes on every release, and set four secrets there:
 | `MAVEN_GPG_PASSPHRASE` | its passphrase |
 | `CENTRAL_USERNAME` | Portal token username |
 | `CENTRAL_PASSWORD` | Portal token password |
+
+After adding the signing secrets, repeat the workflow's `dry-run` rehearsal.
+Inspect the retained deployment and verify its `.asc` files against the public
+fingerprint before allowing any upload. The earlier secret-free dry run proves
+the native matrix and bundle layout, but deliberately produces no signatures.
 
 ## Cutting a release
 
