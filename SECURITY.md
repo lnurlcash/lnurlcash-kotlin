@@ -9,7 +9,7 @@ Only the latest `0.x` release is supported. Pin an exact version.
 
 Report privately through GitHub's advisory form:
 
-<https://github.com/TheCryptoDonkey/lnurlcash-kotlin/security/advisories/new>
+<https://github.com/lnurlcash/lnurlcash-kotlin/security/advisories/new>
 
 Please do not open a public issue for anything that could be used to take
 somebody's notes.

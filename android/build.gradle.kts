@@ -147,7 +147,7 @@ publishing {
                 description.set(
                     "LNURLcash (LUD-25) bearer notes for Android, over the audited Rust core"
                 )
-                url.set("https://github.com/TheCryptoDonkey/lnurlcash-kotlin")
+                url.set("https://github.com/lnurlcash/lnurlcash-kotlin")
                 licenses {
                     license {
                         name.set("MIT")
@@ -163,13 +163,13 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/TheCryptoDonkey/lnurlcash-kotlin.git")
-                    developerConnection.set("scm:git:ssh://git@github.com/TheCryptoDonkey/lnurlcash-kotlin.git")
-                    url.set("https://github.com/TheCryptoDonkey/lnurlcash-kotlin")
+                    connection.set("scm:git:https://github.com/lnurlcash/lnurlcash-kotlin.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/lnurlcash/lnurlcash-kotlin.git")
+                    url.set("https://github.com/lnurlcash/lnurlcash-kotlin")
                 }
                 issueManagement {
                     system.set("GitHub")
-                    url.set("https://github.com/TheCryptoDonkey/lnurlcash-kotlin/issues")
+                    url.set("https://github.com/lnurlcash/lnurlcash-kotlin/issues")
                 }
                 // Written out by hand because there is no `java` component to
                 // read them from. JNA is the one that matters: its plain jar
