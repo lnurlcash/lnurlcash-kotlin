@@ -4,6 +4,11 @@ plugins {
     signing
 }
 
+// This publication combines the facade and generated bindings sources. When
+// signing is enabled Gradle realizes those artifacts during configuration, so
+// the bindings project must already have registered its sourcesJar task.
+evaluationDependsOn(":lnurlcash-kotlin-bindings")
+
 group = "com.lnurlcash"
 version = rootProject.version
 
