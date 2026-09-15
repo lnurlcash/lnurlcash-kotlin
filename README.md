@@ -6,7 +6,7 @@ for Kotlin and the JVM, over the audited
 
 ```kotlin
 dependencies {
-    implementation("io.github.thecryptodonkey:lnurlcash-kotlin:0.1.0")
+    implementation("com.lnurlcash:lnurlcash-kotlin:0.1.0")
 }
 ```
 
@@ -31,7 +31,7 @@ jar:
 
 ```kotlin
 dependencies {
-    implementation("io.github.thecryptodonkey:lnurlcash-kotlin-android:0.1.0")
+    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.1.0")
 }
 ```
 
@@ -134,7 +134,7 @@ when (val outcome = client.rotate(info.callback, info.k1)) {
 ```
 
 That `when` is the reason this wrapper exists. Mutating operations return
-[`MutationOutcome`](src/main/kotlin/io/github/thecryptodonkey/lnurlcash/Types.kt)
+[`MutationOutcome`](src/main/kotlin/com/lnurlcash/Types.kt)
 rather than throwing, because the dangerous case is not an error — it is an
 *unknown*. A `try`/`catch` invites treating "the answer was lost" as "it did
 not happen", and for a rotate that already burned the input, that reasoning

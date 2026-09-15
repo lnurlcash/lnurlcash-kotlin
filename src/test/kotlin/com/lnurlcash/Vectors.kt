@@ -1,4 +1,4 @@
-package io.github.thecryptodonkey.lnurlcash
+package com.lnurlcash
 
 import java.nio.file.Files
 import java.nio.file.Path

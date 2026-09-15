@@ -8,7 +8,7 @@ rootProject.name = "lnurlcash-kotlin"
 // The module is NAMED for the coordinate it publishes under, while its
 // directory stays `bindings`. A Gradle project dependency is rendered into the
 // POM using the target project's name, so a module called `bindings` would
-// publish `io.github.thecryptodonkey:lnurlcash-kotlin` with a dependency on a
+// publish `com.lnurlcash:lnurlcash-kotlin` with a dependency on a
 // `bindings` artifact that does not exist under that group. Naming the project
 // after the artifact removes the chance of that ever drifting apart.
 include(":lnurlcash-kotlin-bindings")

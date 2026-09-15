@@ -4,7 +4,12 @@ plugins {
     signing
 }
 
-group = "io.github.thecryptodonkey"
+// This publication combines the facade and generated bindings sources. When
+// signing is enabled Gradle realizes those artifacts during configuration, so
+// the bindings project must already have registered its sourcesJar task.
+evaluationDependsOn(":lnurlcash-kotlin-bindings")
+
+group = "com.lnurlcash"
 version = rootProject.version
 
 // Android 5.0. The NDK builds against it, the manifest declares it, and the
@@ -28,7 +33,7 @@ val androidManifest = tasks.register("androidManifest") {
             """
             <?xml version="1.0" encoding="utf-8"?>
             <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-                package="io.github.thecryptodonkey.lnurlcash.android">
+                package="com.lnurlcash.android">
                 <uses-sdk android:minSdkVersion="$sdk" />
             </manifest>
             """.trimIndent() + "\n"

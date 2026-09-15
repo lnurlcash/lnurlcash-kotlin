@@ -9,7 +9,7 @@ plugins {
     id("org.jetbrains.dokka-javadoc") version "2.2.0"
 }
 
-group = "io.github.thecryptodonkey"
+group = "com.lnurlcash"
 version = "0.1.0"
 
 repositories {

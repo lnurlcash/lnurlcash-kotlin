@@ -7,7 +7,7 @@ plugins {
     signing
 }
 
-group = "io.github.thecryptodonkey"
+group = "com.lnurlcash"
 version = rootProject.version
 
 repositories {

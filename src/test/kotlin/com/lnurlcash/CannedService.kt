@@ -1,4 +1,4 @@
-package io.github.thecryptodonkey.lnurlcash
+package com.lnurlcash
 
 import com.sun.net.httpserver.HttpServer
 import java.net.InetAddress

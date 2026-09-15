@@ -1,4 +1,4 @@
-package io.github.thecryptodonkey.lnurlcash
+package com.lnurlcash
 
 import kotlin.test.BeforeTest
 import kotlin.test.Test
