@@ -79,7 +79,7 @@ val javadocIndex = tasks.register("javadocIndex") {
             <title>lnurlcash-kotlin-bindings</title>
             <h1>lnurlcash-kotlin-bindings</h1>
             <p>Generated UniFFI bindings and the packaged native core behind
-            <a href="https://github.com/TheCryptoDonkey/lnurlcash-kotlin">lnurlcash-kotlin</a>.
+            <a href="https://github.com/lnurlcash/lnurlcash-kotlin">lnurlcash-kotlin</a>.
             This artifact is machine written and arrives as a transitive
             dependency; depend on <code>lnurlcash-kotlin</code> instead, and
             read its API documentation.</p>
@@ -160,7 +160,7 @@ publishing {
                     "Generated UniFFI bindings and the packaged native core behind " +
                         "lnurlcash-kotlin. Depend on lnurlcash-kotlin, not on this."
                 )
-                url.set("https://github.com/TheCryptoDonkey/lnurlcash-kotlin")
+                url.set("https://github.com/lnurlcash/lnurlcash-kotlin")
                 licenses {
                     license {
                         name.set("MIT")
@@ -176,13 +176,13 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/TheCryptoDonkey/lnurlcash-kotlin.git")
-                    developerConnection.set("scm:git:ssh://git@github.com/TheCryptoDonkey/lnurlcash-kotlin.git")
-                    url.set("https://github.com/TheCryptoDonkey/lnurlcash-kotlin")
+                    connection.set("scm:git:https://github.com/lnurlcash/lnurlcash-kotlin.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/lnurlcash/lnurlcash-kotlin.git")
+                    url.set("https://github.com/lnurlcash/lnurlcash-kotlin")
                 }
                 issueManagement {
                     system.set("GitHub")
-                    url.set("https://github.com/TheCryptoDonkey/lnurlcash-kotlin/issues")
+                    url.set("https://github.com/lnurlcash/lnurlcash-kotlin/issues")
                 }
             }
         }

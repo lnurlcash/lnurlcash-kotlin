@@ -207,9 +207,9 @@ to that commit and `bindings/` is regenerated against it in the same change.
   invisible from either side alone.
 
 First release. An idiomatic Kotlin wrapper over
-[lnurlcash-core](https://github.com/TheCryptoDonkey/lnurlcash-core), checked
+[lnurlcash-core](https://github.com/lnurlcash/lnurlcash-core), checked
 against the shared
-[conformance vectors](https://github.com/TheCryptoDonkey/lnurlcash-conformance)
+[conformance vectors](https://github.com/lnurlcash/lnurlcash-conformance)
 and the adversarial mock mint.
 
 ### Design notes

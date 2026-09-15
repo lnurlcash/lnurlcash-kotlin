@@ -155,4 +155,4 @@ secrets. Only use it where losing the note would not matter.
 
 ## Conformance
 
-https://github.com/TheCryptoDonkey/lnurlcash-conformance
+https://github.com/lnurlcash/lnurlcash-conformance

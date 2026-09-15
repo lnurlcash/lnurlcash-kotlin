@@ -2,7 +2,7 @@
 
 LNURLcash ([LUD-25 draft](https://github.com/lnurl/luds/pull/301)) bearer notes
 for Kotlin and the JVM, over the audited
-[Rust core](https://github.com/TheCryptoDonkey/lnurlcash-core).
+[Rust core](https://github.com/lnurlcash/lnurlcash-core).
 
 ```kotlin
 dependencies {
@@ -22,7 +22,7 @@ there is nothing to build and no `jna.library.path` to set:
 | Windows | yes | yes |
 
 Anywhere else — Alpine and its musl libc, FreeBSD, 32-bit anything — build
-[the core](https://github.com/TheCryptoDonkey/lnurlcash-core) yourself and
+[the core](https://github.com/lnurlcash/lnurlcash-core) yourself and
 point `-Djna.library.path` at it. The Kotlin side is unchanged either way.
 
 On **Android**, depend on the aar instead. Same API, same vectors, ABIs under
@@ -227,7 +227,7 @@ mint sees an ordinary `cx1` either way.
 
 The money-critical logic — request building, response classification, signature
 verification, fee arithmetic — lives in
-[lnurlcash-core](https://github.com/TheCryptoDonkey/lnurlcash-core) and is
+[lnurlcash-core](https://github.com/lnurlcash/lnurlcash-core) and is
 shared with the Swift bindings. One audited implementation, not a hand-written
 port drifting away from a draft spec.
 
@@ -264,13 +264,13 @@ gradle build
 ```
 
 Tests need `node` and the
-[conformance repo](https://github.com/TheCryptoDonkey/lnurlcash-conformance)
+[conformance repo](https://github.com/lnurlcash/lnurlcash-conformance)
 alongside this one, or `LNURLCASH_CONFORMANCE` pointing at it — and that
 checkout needs its own `npm ci`, because the adversarial mock mint is a Node
 process with dependencies of its own:
 
 ```bash
-git clone https://github.com/TheCryptoDonkey/lnurlcash-conformance ../lnurlcash-conformance
+git clone https://github.com/lnurlcash/lnurlcash-conformance ../lnurlcash-conformance
 (cd ../lnurlcash-conformance && npm ci)
 ```
 
@@ -312,7 +312,7 @@ Both by dni, both MIT: [lnurl-mint](https://github.com/dni/lnurl-mint) and
 [lnurl-wallet](https://github.com/dni/lnurl-wallet).
 
 The wider ecosystem — wallets, mints, hardware and the sibling ports — is
-indexed in [awesome-lnurlcash](https://github.com/TheCryptoDonkey/awesome-lnurlcash).
+indexed in [awesome-lnurlcash](https://github.com/lnurlcash/awesome-lnurlcash).
 
 ## License
 
