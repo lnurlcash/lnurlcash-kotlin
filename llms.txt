@@ -3,7 +3,7 @@
 LNURLcash (LUD-25) bearer notes for Kotlin and the JVM, over the Rust core
 lnurlcash-core via UniFFI. MIT.
 
-implementation("com.lnurlcash:lnurlcash-kotlin:0.1.0")
+implementation("com.lnurlcash:lnurlcash-kotlin:0.1.1")
 
 ## CRITICAL: HTTP retries
 

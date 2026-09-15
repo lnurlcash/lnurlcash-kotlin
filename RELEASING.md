@@ -40,6 +40,14 @@ the bindings against it and fails on a single byte of difference. A binding
 that disagrees with the library it calls is undefined behaviour on a money
 path, and nothing downstream would notice.
 
+**The licences travel with the code.** Every jar and aar contains
+`META-INF/LICENSE-lnurlcash-kotlin.txt` and
+`META-INF/THIRD-PARTY-NOTICES.txt`. The latter is generated from the pinned
+core's locked, feature-enabled normal dependency graph; CI regenerates it and
+fails on drift. The upload script then compares both entries byte-for-byte
+with the reviewed repository files. A POM licence field alone is not this
+proof.
+
 **Central is permanent.** A version cannot be replaced or withdrawn, only
 superseded. So the default `publishingType` is `USER_MANAGED`: the deployment
 is uploaded, validated, and then *held* until a human presses publish in the
@@ -113,21 +121,24 @@ the native matrix and bundle layout, but deliberately produces no signatures.
    ```bash
    ./scripts/build-core.sh
    ./scripts/generate-bindings.sh
+   ./scripts/generate-third-party-notices.sh
    ```
 
-   Commit the regenerated `bindings/` in the same change as the pin. They are
-   one fact and reviewing them apart hides the interesting half.
+   Commit the regenerated `bindings/` and `THIRD_PARTY_NOTICES.txt` in the same
+   change as the pin. They are one fact and reviewing them apart hides the
+   interesting half.
 3. Add the `## x.y.z` section to `CHANGELOG.md`.
 4. Push to `main`, wait for ci to go green.
 5. Cut the release:
 
    ```bash
-   gh release create v0.1.0 --title v0.1.0 --notes-from-tag
+   gh release create v0.1.1 --title v0.1.1 --notes-from-tag
    ```
 
    `release: published` fires `release.yml`. Six runners build the pinned core,
-   the assemble job proves the bindings match it, Gradle signs both modules into
-   one deployment tree, and `publish-central.sh` uploads it as a single bundle.
+   the assemble job proves the bindings and notices match it, Gradle signs all
+   three coordinates into one deployment tree, and `publish-central.sh`
+   uploads it as a single bundle.
 6. The run stops at `VALIDATED`. Release it at
    [central.sonatype.com/publishing/deployments](https://central.sonatype.com/publishing/deployments).
    It reaches `search.maven.org` within a few hours.

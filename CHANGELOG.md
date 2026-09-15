@@ -3,6 +3,19 @@
 Semantic versioning. While the LUD-25 draft is unmerged, `0.x` minor bumps may
 carry breaking changes; pin an exact version.
 
+## 0.1.1 — 2026-09-15
+
+### Complete licence material in Maven artifacts
+
+- Embed the project MIT licence and the pinned Rust core dependency notices in
+  every published jar and aar, including sources and javadoc artifacts.
+- Generate the third-party notice set from the exact `core.sha` commit's
+  locked, feature-enabled normal dependency graph, and make CI fail if it
+  drifts.
+- Verify every archive's notice entries byte-for-byte before publication, and
+  require the Android aar's detached signature alongside the jar, POM and
+  Gradle module signatures.
+
 ## 0.1.0 — 2026-09-12
 
 ### Reference address proofs and compact note URLs

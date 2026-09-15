@@ -10,6 +10,11 @@ plugins {
 group = "com.lnurlcash"
 version = rootProject.version
 
+val packagedLicense = rootProject.layout.projectDirectory.file("LICENSE")
+val packagedThirdPartyNotices = rootProject.layout.projectDirectory.file("THIRD_PARTY_NOTICES.txt")
+val licenseEntry = "META-INF/LICENSE-lnurlcash-kotlin.txt"
+val noticesEntry = "META-INF/THIRD-PARTY-NOTICES.txt"
+
 repositories {
     mavenCentral()
 }
@@ -96,7 +101,41 @@ val javadocJar = tasks.register<Jar>("javadocJar") {
 tasks.withType<Jar>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
+    from(packagedLicense) {
+        into("META-INF")
+        rename { "LICENSE-lnurlcash-kotlin.txt" }
+    }
+    from(packagedThirdPartyNotices) {
+        into("META-INF")
+        rename { "THIRD-PARTY-NOTICES.txt" }
+    }
 }
+
+val mainJar = tasks.named<Jar>("jar")
+val sourcesJar = tasks.named<Jar>("sourcesJar")
+val verifyPublishedLegalNotices = tasks.register("verifyPublishedLegalNotices") {
+    dependsOn(mainJar, sourcesJar, javadocJar)
+    doLast {
+        listOf(mainJar, sourcesJar, javadocJar).forEach { task ->
+            val archive = task.get().archiveFile.get().asFile
+            ZipFile(archive).use { zip ->
+                mapOf(
+                    licenseEntry to packagedLicense.asFile,
+                    noticesEntry to packagedThirdPartyNotices.asFile,
+                ).forEach { (entryName, source) ->
+                    val entry = zip.getEntry(entryName)
+                    check(entry != null) { "${archive.name} does not contain $entryName" }
+                    val packaged = zip.getInputStream(entry).use { it.readBytes() }
+                    check(packaged.contentEquals(source.readBytes())) {
+                        "${archive.name}'s $entryName differs from ${source.name}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named("check") { dependsOn(verifyPublishedLegalNotices) }
 
 // Publishing a jar that is missing a platform is worse than not publishing:
 // every consumer on that platform gets an UnsatisfiedLinkError at the first
@@ -146,7 +185,7 @@ val verifyPackagedNatives = tasks.register("verifyPackagedNatives") {
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {
-    dependsOn(verifyNativeLibraries, verifyPackagedNatives)
+    dependsOn(verifyNativeLibraries, verifyPackagedNatives, verifyPublishedLegalNotices)
 }
 
 publishing {

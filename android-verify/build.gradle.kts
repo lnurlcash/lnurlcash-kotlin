@@ -19,7 +19,7 @@ android {
         minSdk = 21
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -38,7 +38,7 @@ kotlin {
 
 dependencies {
     // The whole point: one coordinate, resolved as a real consumer would.
-    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.1.0")
+    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.1.1")
 
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
