@@ -6,7 +6,7 @@ for Kotlin and the JVM, over the audited
 
 ```kotlin
 dependencies {
-    implementation("com.lnurlcash:lnurlcash-kotlin:0.1.0")
+    implementation("com.lnurlcash:lnurlcash-kotlin:0.1.1")
 }
 ```
 
@@ -31,7 +31,7 @@ jar:
 
 ```kotlin
 dependencies {
-    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.1.0")
+    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.1.1")
 }
 ```
 
@@ -260,6 +260,7 @@ the unpaid invoice can poll for it. First rotater wins.
 ```bash
 ./scripts/build-core.sh            # cargo build --release --features ffi
 ./scripts/generate-bindings.sh     # regenerate the UniFFI bindings
+./scripts/generate-third-party-notices.sh
 gradle build
 ```
 

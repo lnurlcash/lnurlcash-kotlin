@@ -12,6 +12,11 @@ evaluationDependsOn(":lnurlcash-kotlin-bindings")
 group = "com.lnurlcash"
 version = rootProject.version
 
+val packagedLicense = rootProject.layout.projectDirectory.file("LICENSE")
+val packagedThirdPartyNotices = rootProject.layout.projectDirectory.file("THIRD_PARTY_NOTICES.txt")
+val licenseEntry = "META-INF/LICENSE-lnurlcash-kotlin.txt"
+val noticesEntry = "META-INF/THIRD-PARTY-NOTICES.txt"
+
 // Android 5.0. The NDK builds against it, the manifest declares it, and the
 // two must agree or a consumer's merge fails with a minSdk conflict.
 val minSdk = 21
@@ -95,6 +100,14 @@ tasks.named("assemble") { dependsOn(aar) }
 tasks.withType<Zip>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
+    from(packagedLicense) {
+        into("META-INF")
+        rename { "LICENSE-lnurlcash-kotlin.txt" }
+    }
+    from(packagedThirdPartyNotices) {
+        into("META-INF")
+        rename { "THIRD-PARTY-NOTICES.txt" }
+    }
 }
 
 // Same reasoning as the jar: an aar missing an ABI is a crash on that device,
@@ -137,6 +150,33 @@ val sourcesJar = tasks.register<Jar>("sourcesJar") {
 val javadocJar = tasks.register<Jar>("javadocJar") {
     archiveClassifier.set("javadoc")
     from(rootProject.tasks.named("dokkaGeneratePublicationJavadoc"))
+}
+
+val verifyPublishedLegalNotices = tasks.register("verifyPublishedLegalNotices") {
+    dependsOn(aar, sourcesJar, javadocJar)
+    doLast {
+        listOf(aar, sourcesJar, javadocJar).forEach { task ->
+            val archive = task.get().archiveFile.get().asFile
+            java.util.zip.ZipFile(archive).use { zip ->
+                mapOf(
+                    licenseEntry to packagedLicense.asFile,
+                    noticesEntry to packagedThirdPartyNotices.asFile,
+                ).forEach { (entryName, source) ->
+                    val entry = zip.getEntry(entryName)
+                    check(entry != null) { "${archive.name} does not contain $entryName" }
+                    val packaged = zip.getInputStream(entry).use { it.readBytes() }
+                    check(packaged.contentEquals(source.readBytes())) {
+                        "${archive.name}'s $entryName differs from ${source.name}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named("check") { dependsOn(verifyPublishedLegalNotices) }
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn(verifyPublishedLegalNotices)
 }
 
 publishing {

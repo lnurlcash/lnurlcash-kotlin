@@ -65,6 +65,12 @@ jobs:
           git diff --exit-code bindings/
         env:
           LNURLCASH_CORE: ${{ github.workspace }}/core
+      - name: third-party notices match the pinned core
+        run: |
+          ./scripts/generate-third-party-notices.sh
+          git diff --exit-code THIRD_PARTY_NOTICES.txt
+        env:
+          LNURLCASH_CORE: ${{ github.workspace }}/core
       - run: gradle build "-Djna.library.path=${{ github.workspace }}/core/target/release"
         env:
           LNURLCASH_CONFORMANCE: ${{ github.workspace }}/conformance

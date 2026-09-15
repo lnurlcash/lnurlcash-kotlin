@@ -30,14 +30,33 @@ PUBLISHING_TYPE="${PUBLISHING_TYPE:-USER_MANAGED}"
 # than letting the Portal reject the upload keeps the failure next to the
 # cause, and catches the case where the signing key was absent and the build
 # quietly produced an unsigned deployment instead of failing.
-unsigned=$(find "$STAGING" \( -name '*.jar' -o -name '*.pom' -o -name '*.module' \) \
+unsigned=$(find "$STAGING" \( -name '*.jar' -o -name '*.aar' -o -name '*.pom' -o -name '*.module' \) \
   -exec sh -c '[ -f "$1.asc" ] || echo "$1"' _ {} \;)
 if [ -n "$unsigned" ]; then
   echo "refusing to upload: no PGP signature for" >&2
-  echo "$unsigned" | sed 's#^#  #' >&2
+  while IFS= read -r artifact; do
+    printf '  %s\n' "$artifact" >&2
+  done <<< "$unsigned"
   echo "MAVEN_GPG_PRIVATE_KEY was probably not set when gradle publish ran." >&2
   exit 1
 fi
+
+# POM metadata is useful to indexers but does not satisfy the obligation to
+# ship notices with the bytes being distributed. Inspect the exact archives in
+# the staged deployment and compare their entries byte-for-byte with the
+# reviewed repository files before anything crosses the network.
+while IFS= read -r archive; do
+  for pair in \
+    "META-INF/LICENSE-lnurlcash-kotlin.txt:$ROOT/LICENSE" \
+    "META-INF/THIRD-PARTY-NOTICES.txt:$ROOT/THIRD_PARTY_NOTICES.txt"; do
+    entry="${pair%%:*}"
+    source="${pair#*:}"
+    if ! unzip -p "$archive" "$entry" | cmp -s - "$source"; then
+      echo "refusing to upload: $(basename "$archive") is missing or differs from $entry" >&2
+      exit 1
+    fi
+  done
+done < <(find "$STAGING" -type f \( -name '*.jar' -o -name '*.aar' \) | LC_ALL=C sort)
 
 # Read from the tree being uploaded rather than asked of Gradle, so the name
 # on the deployment cannot disagree with the artifacts inside it.

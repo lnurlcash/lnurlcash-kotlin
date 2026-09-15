@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 plugins {
     kotlin("jvm") version "2.4.10" apply true
     `java-library`
@@ -10,7 +12,12 @@ plugins {
 }
 
 group = "com.lnurlcash"
-version = "0.1.0"
+version = "0.1.1"
+
+val packagedLicense = layout.projectDirectory.file("LICENSE")
+val packagedThirdPartyNotices = layout.projectDirectory.file("THIRD_PARTY_NOTICES.txt")
+val licenseEntry = "META-INF/LICENSE-lnurlcash-kotlin.txt"
+val noticesEntry = "META-INF/THIRD-PARTY-NOTICES.txt"
 
 repositories {
     mavenCentral()
@@ -78,6 +85,43 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.withType<Jar>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
+    from(packagedLicense) {
+        into("META-INF")
+        rename { "LICENSE-lnurlcash-kotlin.txt" }
+    }
+    from(packagedThirdPartyNotices) {
+        into("META-INF")
+        rename { "THIRD-PARTY-NOTICES.txt" }
+    }
+}
+
+val mainJar = tasks.named<Jar>("jar")
+val sourcesJar = tasks.named<Jar>("sourcesJar")
+val verifyPublishedLegalNotices = tasks.register("verifyPublishedLegalNotices") {
+    dependsOn(mainJar, sourcesJar, javadocJar)
+    doLast {
+        listOf(mainJar, sourcesJar, javadocJar).forEach { task ->
+            val archive = task.get().archiveFile.get().asFile
+            ZipFile(archive).use { zip ->
+                mapOf(
+                    licenseEntry to packagedLicense.asFile,
+                    noticesEntry to packagedThirdPartyNotices.asFile,
+                ).forEach { (entryName, source) ->
+                    val entry = zip.getEntry(entryName)
+                    check(entry != null) { "${archive.name} does not contain $entryName" }
+                    val packaged = zip.getInputStream(entry).use { it.readBytes() }
+                    check(packaged.contentEquals(source.readBytes())) {
+                        "${archive.name}'s $entryName differs from ${source.name}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named("check") { dependsOn(verifyPublishedLegalNotices) }
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn(verifyPublishedLegalNotices)
 }
 
 tasks.test {

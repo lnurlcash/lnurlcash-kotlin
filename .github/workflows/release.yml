@@ -200,6 +200,13 @@ jobs:
         env:
           LNURLCASH_CORE: ${{ github.workspace }}/core
 
+      - name: third-party notices match the pinned core
+        run: |
+          ./scripts/generate-third-party-notices.sh
+          git diff --exit-code THIRD_PARTY_NOTICES.txt
+        env:
+          LNURLCASH_CORE: ${{ github.workspace }}/core
+
       - name: assemble the deployment
         run: gradle publishAllPublicationsToStagingRepository
         env:
