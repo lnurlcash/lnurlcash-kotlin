@@ -147,8 +147,9 @@ is the whole point.
 
 A Part 2 note swaps the hash for a key pair. The wallet keeps `sk`, and the
 mint only ever sees `pk`, written `cp1...`. To spend the note you hand over
-`ck1...`, a recoverable signature by `sk` over the fixed message `LNURLcash`,
-and the mint recovers `pk` from it to find the note. The mint's certificate,
+`ck1...`, the 32-byte `pk` followed by a BIP-340 Schnorr signature by `sk`
+over `sha256("LNURLcash")`. The mint verifies the pair and uses `pk` to find
+the note. The mint's certificate,
 `cs1...`, carries the note amount in its prefix using BOLT 11 amount rules and
 contains the signature over `LNURLcash:<amount_msat>:<hex(pk)>`. A recipient
 can therefore recover both the claimed amount and the mint signature before
@@ -180,7 +181,7 @@ carried amount with another value.
 
 Reference-mint address management proves control with the address branch's
 index-0 private key. `signAddressProof(sk0, action, username)` returns the raw
-`r || s || recovery-id` proof over `LNURLcash:<action>:<username>`; action is
+64-byte BIP-340 proof over `sha256("LNURLcash:<action>:<username>")`; action is
 `register` or `unregister`, and the username must be normalised exactly as it
 is sent to the service.
 
@@ -203,19 +204,22 @@ alone, `rotateWithHash`, `splitWithHash` and `mergeWithHash` send it as
 `p` where a hash keeps `h`.
 
 `noteIdOf(k1)` is the id a mint files either kind under, and `noteLookupOf(k1)`
-what to look a note up by without disclosing it. One note has more than one
-valid `ck1` (anyone can flip one to its high-S twin), so compare notes by id,
-never by k1. `fetchNoteInfo` compares a mint's echo that way too.
+what to look a note up by without disclosing it. A `ck1` is deterministic from
+its note key, so seed recovery reproduces it byte for byte. The decoder and
+lookup helpers also accept the old 65-byte recoverable-ECDSA shape so existing
+notes remain spendable; rotate those into a current 96-byte Schnorr `ck1`
+rather than issuing new legacy values. Compare notes by id, never by k1;
+`fetchNoteInfo` compares a mint's echo that way too.
 
 Three things worth knowing:
 
 - **The `WithHash` mutations carry no secrets.** They never see the key behind
   the output, so an `Unknown` or `Unverifiable` from one hands nothing back.
   Save it before the call.
-- **The branch path follows the reference wallet, not the draft's text.** It is
-  `m/139'/1'/d1/d2/d3/d4`. The text says `m/139'/d1..d4`, which is the Part 1
-  ladder's own node, and a wallet following it finds none of lnurl-wallet's
-  notes.
+- **The branch path is the spec's literal one.** It is `m/139'/d1/d2/d3/d4`,
+  with the hashing key at `m/139'/0`: the same node `deriveCashDomainNode`
+  returns. Wallets that derived under the earlier `m/139'/1'` hop hold notes
+  this path does not find.
 - **A `cx1` links every note on its branch.** It spends nothing, but whoever
   holds it can list every key on the branch and ask the mint about each one.
 
