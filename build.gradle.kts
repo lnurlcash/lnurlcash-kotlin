@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "com.lnurlcash"
-version = "0.1.1"
+version = "0.2.0"
 
 val packagedLicense = layout.projectDirectory.file("LICENSE")
 val packagedThirdPartyNotices = layout.projectDirectory.file("THIRD_PARTY_NOTICES.txt")

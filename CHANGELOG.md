@@ -3,6 +3,27 @@
 Semantic versioning. While the LUD-25 draft is unmerged, `0.x` minor bumps may
 carry breaking changes; pin an exact version.
 
+## 0.2.0 — 2026-09-16
+
+### `ck1` now carries a BIP-340 Schnorr ownership proof, and the address branch has no separate purpose
+
+Both are breaking, incompatible with every `ck1`/`cx1` produced by 0.1.x.
+
+- `ck1` is bech32m over the note's 32-byte x-only public key followed by a
+  64-byte Schnorr signature over the raw UTF-8 bytes of `LNURLcash`, replacing
+  the former 65-byte recoverable-ECDSA encoding. `signNoteOwnership` and
+  `encodeCk1`'s return/argument sizes change accordingly; `cs1` mint
+  certificates are unaffected.
+- `deriveCashAddressNode` is now the literal `m/139'/d1/d2/d3/d4` path LUD-25's
+  text specifies, not a separate `m/139'/1'` sub-purpose. The earlier hop only
+  existed to dodge a collision with a now-removed Part 1 seed-derivation
+  extension that was never part of the spec.
+- `cashSecretAt` and `deriveCashSecret` are removed along with that extension;
+  Part 1 notes are plain randomness, as LUD-25's own text always specified.
+- `core.sha` moves to lnurlcash-core's post-hop-removal `main`; bindings and
+  `THIRD_PARTY_NOTICES.txt` regenerated and graded against
+  `lnurlcash-conformance` 0.12.0.
+
 ## 0.1.1 — 2026-09-15
 
 ### Complete licence material in Maven artifacts
