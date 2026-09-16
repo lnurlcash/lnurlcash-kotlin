@@ -98,10 +98,10 @@ public fun deriveCashRoot(seedHex: String): String = coreDeriveCashRoot(seedHex)
  * bit, or hardening all four, derives a different tree from every conforming
  * wallet and restores nothing, silently.
  *
- * Every unhardened level sits at or above this node, so a hardware signer
- * provisioned with it rather than the seed needs no elliptic curve at all.
- * The cost is that whoever derives it can derive every note key held at that
- * mint: provisioning material, one mint's subtree, not the wallet.
+ * It is the unit a signer is provisioned with, but it does not spare that
+ * signer the curve: Part 2's per-note tweak and its `ck1` signature both need
+ * secp256k1. Whoever derives it can derive every note key held at that mint:
+ * provisioning material, one mint's subtree, not the wallet.
  */
 public fun deriveCashDomainNode(rootHex: String, host: String): String =
     coreDeriveCashDomainNode(rootHex, host)
@@ -167,12 +167,12 @@ public fun isPreimage(value: String): Boolean = coreIsPreimage(value)
  * implementations disagree about which end it belongs on. Trying both is safe:
  * the wrong ordering recovers an unrelated key that cannot match.
  *
- * [k1] may be a Part 2 `ck1`: its id is the key it recovers to, found locally,
- * so checking one needs no network either. [signatureHex] may be a current
- * amount-bearing `cs1`, a legacy fixed-prefix `cs1`, or the same 65 bytes as
- * hex. Decode the certificate separately when its carried amount is needed.
- * A k1 that is neither 32 bytes of hex nor a `ck1` that recovers has no id to
- * check, and is a plain `false`.
+ * [k1] may be a Part 2 `ck1`: its id is the key it embeds and proves, found
+ * locally, so checking one needs no network either. [signatureHex] may be a
+ * current amount-bearing `cs1`, a legacy fixed-prefix `cs1`, or the same 65
+ * bytes as hex. Decode the certificate separately when its carried amount is
+ * needed. A k1 that is neither 32 bytes of hex nor a `ck1` that verifies has
+ * no id to check, and is a plain `false`.
  */
 public fun verifyNoteSignature(
     k1: String,
@@ -201,8 +201,9 @@ public fun verifyNoteSignatureHash(
 //
 // A Part 2 note swaps the hash for a key pair. The holder keeps `sk` and the
 // service only ever sees `pk`, written `cp1...`. To spend the note the holder
-// hands over `ck1...`, a recoverable signature by `sk` over a fixed message;
-// the service recovers `pk` from it and finds the note. The mint certifies each
+// hands over `ck1...`, `pk` followed by a BIP-340 Schnorr signature by `sk`
+// over `sha256("LNURLcash")`; the service verifies the pair and finds the note
+// by `pk`. The mint certifies each
 // note with `cs1...`, the signature it has always made, over `hex(pk)` instead
 // of a hash, so a recipient can check a note offline with nothing but its `ck1`
 // and `cs1`.
@@ -228,13 +229,20 @@ public fun decodeCp1(value: String): String? = coreDecodeCp1(value)
 public fun isCp1(value: String): Boolean = coreIsCp1(value)
 
 /**
- * A 65-byte ownership signature, `r || s || recovery id`, as a `ck1`.
+ * A 96-byte ownership payload, the 32-byte x-only note key followed by its
+ * 64-byte BIP-340 signature (what [signNoteOwnership] returns), as a `ck1`.
+ * Only the 96-byte shape is encoded; a legacy 65-byte one is refused.
  *
  * That string spends the note, so it is as secret as the key that made it.
  */
 public fun encodeCk1(signatureHex: String): String = coreEncodeCk1(signatureHex)
 
-/** The 65 bytes inside a `ck1`, as hex, or null for anything that is not one. */
+/**
+ * The bytes inside a `ck1`, as hex, or null for anything that is not one: the
+ * 96-byte `pk || sig` payload, or the 65 bytes of a legacy recoverable-ECDSA
+ * `ck1`, still read so an old note can be rotated. Decoding does not verify;
+ * [recoverNoteOwnershipPubkey] does.
+ */
 public fun decodeCk1(value: String): String? = coreDecodeCk1(value)
 
 public fun isCk1(value: String): Boolean = coreIsCk1(value)
@@ -368,13 +376,14 @@ public fun signAddressProof(indexZeroSecretKeyHex: String, action: String, usern
     coreSignAddressProof(indexZeroSecretKeyHex, action, username)
 
 /**
- * The note's x-only public key, recovered offline from its 96-byte ownership
- * payload, or null for anything that does not verify.
+ * The note's x-only public key from its ownership payload, checked offline, or
+ * null for anything that does not verify.
  *
- * Verifies against the current `sha256("LNURLcash")` digest first, then
- * falls back to the pre-2026-09-16 raw-message scheme so a note minted under
- * it stays redeemable until it is rotated - this function never *produces*
- * that shape, only reads it back (see [signNoteOwnership]).
+ * A 96-byte payload is verified against the current `sha256("LNURLcash")`
+ * digest first, then against the pre-2026-09-16 raw message, so a note minted
+ * under that scheme stays redeemable until it is rotated. A legacy 65-byte
+ * recoverable-ECDSA payload is read by recovering its key. [signNoteOwnership]
+ * never produces either older shape; this only reads them back.
  *
  * This is what a service does with a `ck1` to find the note: [decodeCk1] then
  * this gives the key the note is filed under.
@@ -384,11 +393,13 @@ public fun recoverNoteOwnershipPubkey(signatureHex: String): String? =
 
 /**
  * The id a service files a note under: `sha256(k1)` for a Part 1 secret, the
- * key a `ck1` recovers to for a Part 2 note, and null for anything else.
+ * verified key a `ck1` embeds for a Part 2 note, and null for anything else,
+ * an invalid `ck1` included.
  *
- * Compare notes by this, never by k1. One Part 2 note has more than one valid
- * `ck1` string (anyone can flip a signature to its high-S twin, and it still
- * recovers to the same key), so a wallet deduplicating by string would hold
+ * Compare notes by this, never by k1. One Part 2 note can have more than one
+ * valid `ck1` string: a signer using other auxiliary randomness makes a
+ * different signature, and a note minted before the 2026-09-16 digest change
+ * carries a raw-message proof. A wallet deduplicating by string would hold
  * one note twice.
  */
 public fun noteIdOf(k1: String): String? = coreNoteIdOf(k1)
@@ -443,8 +454,8 @@ public fun deriveNostrAddressNode(secretKeyHex: String, host: String): String =
 /**
  * Resolve scanned or pasted text to a note URL - bech32, `lnurlw://`, or https.
  *
- * The URL's k1 must be 32 bytes of hex or a Part 2 `ck1` that recovers to a
- * key. A `cp1` there is refused: it names the note but cannot spend it.
+ * The URL's k1 must be 32 bytes of hex or a Part 2 `ck1` that verifies. A
+ * `cp1` there is refused: it names the note but cannot spend it.
  */
 public fun resolveNoteInput(value: String): String? = coreResolveNoteInput(value)
 
