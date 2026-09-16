@@ -1,9 +1,8 @@
 package com.lnurlcash.verify
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.lnurlcash.deriveCashDomainNode
 import com.lnurlcash.deriveCashRoot
-import com.lnurlcash.deriveCashSecret
-import com.lnurlcash.hashK1
 import com.lnurlcash.isAllowedServiceUrl
 import com.lnurlcash.verifyNoteSignature
 import org.junit.Assert.assertEquals
@@ -32,8 +31,9 @@ class NativeLoadTest {
     private val cashRoot =
         "c7a2496e9b453a67c5d2a1f04936ec1259440d45454c795a99a66269e4cd3005" +
             "111e1cc966fca2fe32f054f14caceab90449e536d94cf6935ea12a087e414f60"
-    private val k1 = "de5b81405a12e1297b350d80e2ad85043ed5b9436a0c5592d3302778de330499"
-    private val noteId = "7db9da2845cd45c1c3c2e302d6135da46823e245f756b830ef59ac324b769e02"
+    private val domainNode =
+        "72056e5cde21458b13689c3950904dfd327415a506d064290e5e5f4296a4054" +
+            "3dd5e9504ddb6eefbafa4ad3b00ad421858fafc0ed9ea4abd9cb68793f845cfc1"
 
     @Test
     fun urlAdmissionCrossesTheFfi() {
@@ -58,7 +58,6 @@ class NativeLoadTest {
     @Test
     fun derivationMatchesTheConformanceVectors() {
         assertEquals(cashRoot, deriveCashRoot(seedHex))
-        assertEquals(k1, deriveCashSecret(cashRoot, "mint.example", 0u))
-        assertEquals(noteId, hashK1(k1))
+        assertEquals(domainNode, deriveCashDomainNode(cashRoot, "mint.example"))
     }
 }
