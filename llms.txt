@@ -72,19 +72,21 @@ noteK1, noteDeclaredAmountMsat, noteSignature, buildNoteInfoUrlByHash,
 parseMintFee, applyMintFee, grossUpForMintFee, describeMintFee,
 decodeBolt11AmountMsat, isBolt11Invoice, sameInvoice.
 
-Seed-recoverable secrets (nodes are privateKey || chainCode, 128 hex chars):
-deriveCashRoot(seedHex), deriveCashDomainNode(root, host), cashSecretAt(node, i),
-deriveCashSecret(root, host, i), cashDomainIndices(root, host),
+Seed derivation (nodes are privateKey || chainCode, 128 hex chars):
+deriveCashRoot(seedHex), deriveCashDomainNode(root, host), cashDomainIndices(root, host),
 deriveCashMaster(seedHex), deriveCashChild(node, index: UInt) (hardened iff
-index >= 2^31). LEGACY, do not mint under: deriveNoteRoot, deriveNoteSecret.
+index >= 2^31). Part 1 secrets are plain randomness, not seed-derived.
+LEGACY, do not mint under: deriveNoteRoot, deriveNoteSecret.
 
 Amounts are Long milli-satoshis everywhere (the bindings' ULong is converted).
 
-## LUD-25 Part 2: a note keyed by a public key, spent by a recoverable signature
+## LUD-25 Part 2: a note keyed by a public key, spent by a BIP-340 Schnorr proof
 
 Hex in, hex out, as everywhere else here. Decoders return null, never throw.
 encodeCp1/decodeCp1/isCp1   note pubkey, 32-byte x-only, bech32m "cp"
-encodeCk1/decodeCk1/isCk1   bearer secret, 65-byte r||s||recid, "ck". SPENDS
+encodeCk1/decodeCk1/isCk1   bearer secret, 96-byte x-only pk||Schnorr sig, "ck". SPENDS
+  decode/is also accept the legacy 65-byte recoverable-ECDSA shape so an old
+  note can be rotated; encode only takes the current 96 bytes
 encodeCs1WithAmount/decodeCs1WithAmount/isCs1WithAmount
   current mint certificate, Cs1(amountMsat, signature); HRP is "cs" plus the
   BOLT11 amount suffix. Signature covers LNURLcash:<amount_msat>:<hex(pk)>.
@@ -93,9 +95,9 @@ decodeAnyCs1/isAnyCs1       migration helpers accepting either certificate
 encodeCx1/decodeCx1/isCx1   watch-only branch, Cx1(pubkeyXOnly, chainCode), "cx"
   No length limit; all-uppercase accepted; mixed case, a bech32 (not
   bech32m) checksum, the wrong hrp or length and non-zero padding refused
-deriveCashAddressNode(root, host)   m/139'/1'/d1..d4, hashing key m/139'/1'/0.
-  The REFERENCE WALLET's path, not the spec text's m/139'/d1..d4 (that is the
-  Part 1 ladder's node, and finds none of its notes). Bearer material
+deriveCashAddressNode(root, host)   m/139'/d1/d2/d3/d4, hashing key m/139'/0:
+  the spec's literal path, the same node deriveCashDomainNode returns. Bearer
+  material
 cashNodeToCx1(node): Cx1   the part to hand out; it links every note on the
   branch but spends none
 deriveNotePubkey(P, chainCode, i: UInt)   watch-only; i any UInt, never
@@ -103,14 +105,16 @@ deriveNotePubkey(P, chainCode, i: UInt)   watch-only; i any UInt, never
 deriveNoteSecretKey(p, chainCode, i: UInt)   negates p first when P has odd y
 Java: both note derivation functions also accept a long index in 0..4294967295;
 out-of-range indices throw IllegalArgumentException. Kotlin UInt overloads remain.
-signNoteOwnership(sk) -> 65-byte hex   RFC6979, low-S, over the fixed
-  "LNURLcash". encodeCk1 it for the wire
-signAddressProof(indexZeroSk, action, username) -> 65-byte hex
-  reference address register/update/unregister proof; exact message
-  LNURLcash:<register|unregister>:<normalised username>; raw r||s||recid
-recoverNoteOwnershipPubkey(sig) -> pk?
-noteIdOf(k1) -> id?   sha256(k1) for a secret, the recovered key for a ck1.
-  One note has many valid ck1 strings: compare notes by this, never by k1
+signNoteOwnership(sk) -> 96-byte hex   pk||BIP-340 sig over sha256("LNURLcash"),
+  zero auxiliary input so seed recovery reproduces the ck1. encodeCk1 it for
+  the wire
+signAddressProof(indexZeroSk, action, username) -> 64-byte hex
+  reference address register/update/unregister proof; BIP-340 over
+  sha256("LNURLcash:<register|unregister>:<normalised username>")
+recoverNoteOwnershipPubkey(payload) -> pk?   verifies against the sha256
+  digest, then the pre-2026-09-16 raw message, before returning the key
+noteIdOf(k1) -> id?   sha256(k1) for a secret, the verified embedded key for a
+  ck1. Compare notes by this, never by k1
 noteLookupOf(k1) -> String?   the hash, or the cp1 for a ck1; pass it to
   buildNoteInfoUrlByHash, which sends a cp1 as p and a hash as h
 verifyNoteSignature also takes a ck1 as k1 and a cs1 as the signature;
@@ -118,8 +122,8 @@ verifyNoteSignature also takes a ck1 as k1 and a cs1 as the signature;
 Wire: a ck1 goes wherever a k1 does; a cp1 wherever an output does.
   requestMintInvoiceWithHash: a cp1 goes as the comment alone (a hash also
   sends h). rotate/split/mergeWithHash: p1/p2 for a cp1, h/h2 for a hash.
-  fetchNoteInfo compares the echoed k1 as the note it names: a mint echoing
-  the high-S twin of our ck1 is the same note; another key is still refused
+  fetchNoteInfo compares an echoed ck1 by its verified note id; another key
+  is refused
 deriveNostrCashSeed(sk) / deriveNostrAddressNode(sk, host)   NOT LUD-25: a
   branch from a Nostr identity key, via
   HMAC-SHA256(key = sk, msg = "LNURLcash/nostr-seed"), then the address path
