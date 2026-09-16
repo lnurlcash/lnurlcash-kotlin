@@ -56,7 +56,10 @@ class Part2VectorTest {
         assertEquals("LNURLcash:<register|unregister>:<username>", conventions.str("addressProofMessage"))
         assertEquals("LNURLcash:<amount_msat>:<hex(pk)>", conventions.str("certificateMessage"))
         assertEquals("cs || BOLT11_amount_suffix(amount_msat)", conventions.str("certificateHrp"))
-        assertEquals("UTF-8 bytes, no application prehash", conventions.str("ownershipMessageEncoding"))
+        assertEquals(
+            "UTF-8 bytes, sha256-hashed to a 32-byte digest before signing (2026-09-16, luds#6de59b2)",
+            conventions.str("ownershipMessageEncoding"),
+        )
     }
 
     @Test

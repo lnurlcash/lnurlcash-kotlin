@@ -5,7 +5,7 @@ conservatively cover its feature-enabled normal dependency graph across all
 Cargo targets. The graph is generated from Cargo.lock at the exact core
 commit pinned by this release:
 
-  eebaf808c180b1d36dfaf27fa055cda799c7eb16
+  5c4eead539175ec5a3d97e6d94f9c6107750c823
 
 Each component remains under its declared licence. Project and source URLs
 identify where the corresponding source code can be obtained. Licence files
