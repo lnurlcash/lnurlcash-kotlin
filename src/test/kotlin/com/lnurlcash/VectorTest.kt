@@ -301,27 +301,15 @@ class VectorTest {
  */
 class DerivationVectorTest {
     @Test
-    fun `derives LUD-25 note secrets`() {
-        val vectors = Vectors.load("cash-derivation.json")
-        assertEquals(
-            "m/139'/d1/d2/d3/d4/i'",
-            vectors["scheme"]!!.jsonObject["secretPath"]!!.jsonPrimitive.content,
-        )
+    fun `derives the m139' branch node - Part 2's address branch, no separate purpose`() {
         for (case in Vectors.cases("cash-derivation.json", "cases")) {
             val name = case["name"]!!.jsonPrimitive.content
             val host = case["host"]!!.jsonPrimitive.content
-            val index = case["index"]!!.jsonPrimitive.content.toUInt()
             val root = deriveCashRoot(case["seedHex"]!!.jsonPrimitive.content)
             assertEquals(case["cashRoot"]!!.jsonPrimitive.content, root, name)
 
             val domainNode = deriveCashDomainNode(root, host)
             assertEquals(case["domainNode"]!!.jsonPrimitive.content, domainNode, name)
-
-            val k1 = case["k1"]!!.jsonPrimitive.content
-            assertEquals(k1, deriveCashSecret(root, host, index), name)
-            // The hardware-signer path: the mint's subtree alone resolves it.
-            assertEquals(k1, cashSecretAt(domainNode, index), name)
-            assertEquals(case["noteId"]!!.jsonPrimitive.content, hashK1(k1), name)
         }
     }
 

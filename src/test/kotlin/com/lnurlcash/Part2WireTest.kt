@@ -1,11 +1,9 @@
 package com.lnurlcash
 
-import java.math.BigInteger
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
@@ -46,13 +44,10 @@ class Part2WireTest {
             """"minWithdrawable":21000,"maxWithdrawable":21000,"mintPubkey":"$mintPubkey"}"""
 
     @Test
-    fun `a service echoing another valid ck1 for the same note has named the same note`() {
+    fun `a service echoing the same ck1, any case, has named the same note`() {
         val ours = notes[0].str("ck1")
-        val twin = highSTwin(ours)
-        assertNotEquals(ours, twin, "the twin is a different string")
-        assertEquals(noteIdOf(ours), noteIdOf(twin), "and the same note")
 
-        for (echoed in listOf(ours, ours.uppercase(), twin)) {
+        for (echoed in listOf(ours, ours.uppercase())) {
             CannedService(withdrawInfo(echoed)).use { service ->
                 val info = runBlocking {
                     LnurlcashClient().fetchNoteInfo("${service.url}/w?k1=$ours&amount=21000")
@@ -243,8 +238,8 @@ class Part2WireTest {
 
     @Test
     fun `nothing else is asked for an invoice`() {
-        val signature = notes[0].str("ownershipSignature")
-        for (bad in listOf(notes[0].str("ck1"), encodeCs1WithAmount(21_000, signature), "not-a-32-byte-hash")) {
+        val mintSignature = part2.array("certificates")[0].jsonObject.str("signature")
+        for (bad in listOf(notes[0].str("ck1"), encodeCs1WithAmount(21_000, mintSignature), "not-a-32-byte-hash")) {
             CannedService(invoice).use { service ->
                 assertFailsWith<LnurlcashException.RequestRefused>(bad) {
                     runBlocking { LnurlcashClient().requestMintInvoiceWithHash("${service.url}/p/cb", 21_000, bad) }
@@ -266,7 +261,7 @@ class Part2WireTest {
     fun `nothing else has a note id`() {
         val ck1 = notes[0].str("ck1")
         val corrupted = ck1.dropLast(1) + if (ck1.last() == 'q') 'p' else 'q'
-        val cs1Shaped = encodeCs1WithAmount(21_000, notes[0].str("ownershipSignature"))
+        val cs1Shaped = encodeCs1WithAmount(21_000, part2.array("certificates")[0].jsonObject.str("signature"))
         for (bad in listOf("", "zz", "11".repeat(31), notes[0].str("cp1"), cs1Shaped, corrupted)) {
             assertNull(noteIdOf(bad), bad)
             assertNull(noteLookupOf(bad), bad)
@@ -301,17 +296,4 @@ class Part2WireTest {
         assertEquals(notes[0].str("ck1"), noteK1(url))
         assertNull(resolveNoteInput("https://mint.example/w?k1=${notes[0].str("cp1")}&amount=21000"))
     }
-}
-
-/**
- * The same signature with s replaced by n - s and the recovery id's parity bit
- * flipped. Anyone holding a `ck1` can make this, and it recovers to the same
- * key, which is the whole reason notes compare by id.
- */
-private fun highSTwin(ck1: String): String {
-    val signature = decodeCk1(ck1)!!
-    val s = BigInteger(signature.substring(64, 128), 16)
-    val twinS = CURVE_ORDER.subtract(s).toString(16).padStart(64, '0')
-    val recovery = signature.substring(128).toInt(16) xor 1
-    return encodeCk1(signature.substring(0, 64) + twinS + "%02x".format(recovery))
 }
