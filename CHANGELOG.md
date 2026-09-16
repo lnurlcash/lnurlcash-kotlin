@@ -3,6 +3,34 @@
 Semantic versioning. While the LUD-25 draft is unmerged, `0.x` minor bumps may
 carry breaking changes; pin an exact version.
 
+## 0.3.0 — 2026-09-16
+
+### Ownership and address proofs sign a sha256 digest, not the raw message
+
+Breaking: a `ck1` produced by 0.2.x no longer verifies against the pubkey it
+embeds unless it is re-signed under this version.
+
+BIP-340's own reference implementation, and most conforming Schnorr signers
+(`libsecp256k1`'s `schnorrsig` module included), only accept a 32-byte
+message; 0.2.0's `ck1` signed the raw 9-byte `LNURLcash` string directly,
+which only worked because the underlying Rust core's Schnorr library is more
+permissive than that, and would not have interoperated with an off-the-shelf
+signer. Matches `lnurl-wallet#167`/`#168` and `luds#6de59b2`.
+
+- `signNoteOwnership` now signs `sha256("LNURLcash")` instead of the raw
+  string. `recoverNoteOwnershipPubkey` verifies against that digest first,
+  then falls back to the pre-2026-09-16 raw-message scheme so a note minted
+  under 0.2.x stays redeemable until it is rotated - `signNoteOwnership`
+  never produces that shape anymore, only read back.
+- `signAddressProof` now signs `sha256(message)`, for the same reason:
+  `username` is variable-length, so the raw message would otherwise only
+  rarely land on 32 bytes. No fallback here - a register/unregister proof is
+  a fresh action a wallet initiates itself, never a stored bearer secret read
+  back later.
+- `core.sha` moves to lnurlcash-core's post-digest-fix `main`; bindings and
+  `THIRD_PARTY_NOTICES.txt` regenerated and graded against
+  `lnurlcash-conformance` 0.13.0.
+
 ## 0.2.0 — 2026-09-16
 
 ### `ck1` now carries a BIP-340 Schnorr ownership proof, and the address branch has no separate purpose

@@ -345,18 +345,21 @@ private fun checkedNoteIndex(index: Long): UInt {
 }
 
 /**
- * The 65-byte ownership signature over the fixed message `LNURLcash`, as hex.
- * [encodeCk1] it for the wire. Either way, it spends the note.
+ * The 96-byte `pk || sig` ownership payload, as hex: a BIP-340 Schnorr
+ * signature over `sha256("LNURLcash")`, a fixed 32-byte digest, with the
+ * note's x-only pubkey attached. [encodeCk1] it for the wire. Either way,
+ * it spends the note.
  *
- * RFC6979 and low-S, so one key always reproduces one `ck1` byte for byte: a
- * wallet restored from its seed can re-sign every note it ever held.
- * Deterministic is not unique, though. See [noteIdOf].
+ * All-zero auxiliary randomness, so one key always reproduces one `ck1`
+ * byte for byte: a wallet restored from its seed can re-sign every note it
+ * ever held. Deterministic is not unique, though. See [noteIdOf].
  */
 public fun signNoteOwnership(secretKeyHex: String): String = coreSignNoteOwnership(secretKeyHex)
 
 /**
- * A register/update or unregister proof by the address branch's index-0 key,
- * as raw `r || s || recovery-id` hex.
+ * A register/update or unregister proof by the address branch's index-0 key:
+ * a 64-byte BIP-340 Schnorr signature over `sha256("LNURLcash:<action>:<username>")`,
+ * as hex.
  *
  * [username] must be the same normalised value sent to the service. Only the
  * reference actions `register` and `unregister` are accepted.
@@ -365,8 +368,13 @@ public fun signAddressProof(indexZeroSecretKeyHex: String, action: String, usern
     coreSignAddressProof(indexZeroSecretKeyHex, action, username)
 
 /**
- * The note's x-only public key, recovered offline from its 65-byte ownership
- * signature, or null for anything that does not recover.
+ * The note's x-only public key, recovered offline from its 96-byte ownership
+ * payload, or null for anything that does not verify.
+ *
+ * Verifies against the current `sha256("LNURLcash")` digest first, then
+ * falls back to the pre-2026-09-16 raw-message scheme so a note minted under
+ * it stays redeemable until it is rotated - this function never *produces*
+ * that shape, only reads it back (see [signNoteOwnership]).
  *
  * This is what a service does with a `ck1` to find the note: [decodeCk1] then
  * this gives the key the note is filed under.
