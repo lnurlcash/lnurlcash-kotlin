@@ -50,20 +50,13 @@ class Part2VectorTest {
     @Test
     fun `names the conventions it implements`() {
         val conventions = part2.obj("conventions")
-        assertEquals("m/139'/1'/d1/d2/d3/d4", conventions.str("addressBranch"))
-        assertEquals("m/139'/1'/0", conventions.str("hashingKey"))
+        assertEquals("m/139'/d1/d2/d3/d4", conventions.str("addressBranch"))
+        assertEquals("m/139'/0", conventions.str("hashingKey"))
         assertEquals("LNURLcash", conventions.str("ownershipMessage"))
         assertEquals("LNURLcash:<register|unregister>:<username>", conventions.str("addressProofMessage"))
         assertEquals("LNURLcash:<amount_msat>:<hex(pk)>", conventions.str("certificateMessage"))
         assertEquals("cs || BOLT11_amount_suffix(amount_msat)", conventions.str("certificateHrp"))
-        // The digest every ownership signature is made over. The facade has no
-        // function for it; that every signature below comes out byte for byte
-        // is what ties signNoteOwnership to it, since RFC6979 draws the nonce
-        // from the digest.
-        assertEquals(
-            conventions.str("ownershipDigest"),
-            lightningSignedDigest(conventions.str("ownershipMessage")).hex(),
-        )
+        assertEquals("UTF-8 bytes, no application prehash", conventions.str("ownershipMessageEncoding"))
     }
 
     @Test
@@ -75,7 +68,6 @@ class Part2VectorTest {
             val username = proof.str("username")
             val message = "LNURLcash:$action:$username"
             assertEquals(message, proof.str("message"))
-            assertEquals(lightningSignedDigest(message).hex(), proof.str("digest"))
             assertEquals(
                 proof.str("signature"),
                 signAddressProof(proof.str("indexZeroSecretKey"), action, username),
@@ -107,16 +99,18 @@ class Part2VectorTest {
             // m/139' is one hardened step below the master, whichever way it is reached
             assertEquals(root, deriveCashChild(deriveCashMaster(seedHex), 0x8000_008Bu), host)
 
-            // the hashing key is m/139'/1'/0, so the four levels hang off m/139'/1'
-            val purpose = deriveCashChild(root, 0x8000_0001u)
+            // the hashing key is m/139'/0, so the four levels hang off the root itself
             val domainIndices = branch.array("domainIndices").map { it.jsonPrimitive.long.toUInt() }
-            assertEquals(domainIndices, cashDomainIndices(purpose, host), host)
+            assertEquals(domainIndices, cashDomainIndices(root, host), host)
 
             val node = deriveCashAddressNode(root, host)
             assertEquals(branch.str("addressNode"), node, host)
             // and it is exactly those four raw levels, walked one CKDpriv at a
             // time, each hardened or not by its own top bit
-            assertEquals(node, domainIndices.fold(purpose) { at, index -> deriveCashChild(at, index) }, host)
+            assertEquals(node, domainIndices.fold(root) { at, index -> deriveCashChild(at, index) }, host)
+            // no separate purpose for Part 2: the address branch is the same
+            // node deriveCashDomainNode already derives for the same host
+            assertEquals(node, deriveCashDomainNode(root, host), host)
             val privateKey = node.substring(0, 64)
             val chainCode = node.substring(64)
 
@@ -166,19 +160,17 @@ class Part2VectorTest {
                     "$at: branchParity",
                 )
 
-                // RFC6979: the same key reproduces the same ck1, byte for byte
-                val signature = signNoteOwnership(secretKey)
-                assertEquals(note.str("ownershipSignature"), signature, at)
-                assertTrue(signature.substring(128).toInt(16) <= 3, "$at: recovery id")
-                assertTrue(isLowS(signature), "$at: high S")
+                // all-zero aux_rand: the same key reproduces the same ck1, byte for byte
+                val payload = signNoteOwnership(secretKey) // pk (32) || Schnorr sig (64), 96 bytes
+                assertEquals(note.str("ownershipSignature"), payload.substring(64), at)
                 val ck1 = note.str("ck1")
-                assertEquals(ck1, encodeCk1(signature), at)
-                assertEquals(signature, decodeCk1(ck1), at)
+                assertEquals(ck1, encodeCk1(payload), at)
+                assertEquals(payload, decodeCk1(ck1), at)
                 assertTrue(isCk1(ck1), at)
 
                 // the service's side: the ck1 alone gives the key the note is
                 // filed under, which is also the one the watcher derived
-                assertEquals(pubkey, recoverNoteOwnershipPubkey(signature), at)
+                assertEquals(pubkey, recoverNoteOwnershipPubkey(payload), at)
                 assertEquals(pubkey, noteIdOf(ck1), at)
                 assertEquals(cp1, noteLookupOf(ck1), at)
                 graded++
@@ -389,7 +381,3 @@ private fun tweakedSecretKey(privateKey: String, odd: Boolean, tweak: BigInteger
     val base = if (odd) CURVE_ORDER.subtract(p) else p
     return base.add(tweak).mod(CURVE_ORDER).toString(16).padStart(64, '0')
 }
-
-/** s at or below n/2, which is what libsecp256k1 always produces. */
-private fun isLowS(signatureHex: String): Boolean =
-    BigInteger(signatureHex.substring(64, 128), 16) <= CURVE_ORDER.shiftRight(1)

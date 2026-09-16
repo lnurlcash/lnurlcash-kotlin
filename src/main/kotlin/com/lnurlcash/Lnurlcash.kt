@@ -10,7 +10,6 @@ import uniffi.lnurlcash_core.describeMintFee as coreDescribeMintFee
 import uniffi.lnurlcash_core.buildNoteInfoUrlByHash as coreBuildNoteInfoUrlByHash
 import uniffi.lnurlcash_core.cashDomainIndices as coreCashDomainIndices
 import uniffi.lnurlcash_core.cashNodeToCx1 as coreCashNodeToCx1
-import uniffi.lnurlcash_core.cashSecretAt as coreCashSecretAt
 import uniffi.lnurlcash_core.decodeCk1 as coreDecodeCk1
 import uniffi.lnurlcash_core.decodeCp1 as coreDecodeCp1
 import uniffi.lnurlcash_core.decodeCs1 as coreDecodeCs1
@@ -22,7 +21,6 @@ import uniffi.lnurlcash_core.deriveCashChild as coreDeriveCashChild
 import uniffi.lnurlcash_core.deriveCashDomainNode as coreDeriveCashDomainNode
 import uniffi.lnurlcash_core.deriveCashMaster as coreDeriveCashMaster
 import uniffi.lnurlcash_core.deriveCashRoot as coreDeriveCashRoot
-import uniffi.lnurlcash_core.deriveCashSecret as coreDeriveCashSecret
 import uniffi.lnurlcash_core.deriveNostrAddressNode as coreDeriveNostrAddressNode
 import uniffi.lnurlcash_core.deriveNostrCashSeed as coreDeriveNostrCashSeed
 import uniffi.lnurlcash_core.deriveNotePubkey as coreDeriveNotePubkey
@@ -82,44 +80,31 @@ public fun generateNoteSecret(): String = coreGenerateNoteSecret()
 public fun hashK1(k1: String): String = coreHashK1(k1)
 
 /**
- * LUD-25 seed-recoverable note secrets: `m/139'`, this wallet's own root.
+ * `m/139'`, a wallet's own root for everything Part 2 (Wallet-side ownership
+ * proofs) derives beneath it - not Part 1, which is plain randomness with no
+ * derivation at all.
  *
  * `seedHex` is raw seed bytes as hex; a 64-byte BIP39 seed is the interop
  * case. The returned node is `privateKey || chainCode`, 64 bytes of hex, and
  * is bearer material for every note beneath it.
- *
- * The path is `m/139'/d1/d2/d3/d4/i'`, where `d1..d4` are RAW uint32 out of
- * `HMAC-SHA256(m/139'/0, host)`. BIP-32 reads any index at or above 2^31 as
- * hardened, so which of those levels are hardened is decided by the mint's own
- * host name. Masking the top bit, or hardening all four, derives a different
- * tree from every conforming wallet and restores nothing, silently.
  */
 public fun deriveCashRoot(seedHex: String): String = coreDeriveCashRoot(seedHex)
 
 /**
- * `m/139'/d1/d2/d3/d4` for one mint: everything above a note's own index.
+ * `m/139'/d1/d2/d3/d4` for one mint - [deriveCashAddressNode]'s literal path,
+ * with `d1..d4` the four RAW uint32 out of `HMAC-SHA256(m/139'/0, host)`.
+ * BIP-32 reads any index at or above 2^31 as hardened, so which of those
+ * levels are hardened is decided by the mint's own host name. Masking the top
+ * bit, or hardening all four, derives a different tree from every conforming
+ * wallet and restores nothing, silently.
  *
  * Every unhardened level sits at or above this node, so a hardware signer
  * provisioned with it rather than the seed needs no elliptic curve at all.
- * The cost is that whoever derives it can derive every note secret held at
- * that mint: provisioning material, one mint's subtree, not the wallet.
+ * The cost is that whoever derives it can derive every note key held at that
+ * mint: provisioning material, one mint's subtree, not the wallet.
  */
 public fun deriveCashDomainNode(rootHex: String, host: String): String =
     coreDeriveCashDomainNode(rootHex, host)
-
-/** The i-th note secret beneath a mint's domain node. */
-public fun cashSecretAt(domainNodeHex: String, index: UInt): String =
-    coreCashSecretAt(domainNodeHex, index)
-
-/**
- * The i-th note secret at a mint, from the root.
- *
- * Re-derives the domain node on every call. Hold the node for a run of
- * secrets, and persist the index in the SAME write that stages the record,
- * BEFORE its hash goes on the wire.
- */
-public fun deriveCashSecret(rootHex: String, host: String, index: UInt): String =
-    coreDeriveCashSecret(rootHex, host, index)
 
 /** The four raw uint32 levels a mint's subtree hangs off. */
 public fun cashDomainIndices(rootHex: String, host: String): List<UInt> =
@@ -139,8 +124,7 @@ public fun deriveCashMaster(seedHex: String): String = coreDeriveCashMaster(seed
  * then.
  *
  * The index decides, not the caller, which is exactly what LUD-25's raw uint32
- * levels need. It is also how the address branch's `m/139'/1'` is reached:
- * `deriveCashChild(root, 0x8000_0001u)`.
+ * levels need.
  */
 public fun deriveCashChild(nodeHex: String, index: UInt): String = coreDeriveCashChild(nodeHex, index)
 
@@ -408,14 +392,13 @@ public fun noteIdOf(k1: String): String? = coreNoteIdOf(k1)
 public fun noteLookupOf(k1: String): String? = coreNoteLookupOf(k1)
 
 /**
- * `m/139'/1'/d1/d2/d3/d4` for one mint, as `privateKey || chainCode` hex: the
- * address branch Part 2 note keys hang off, with the hashing key at
- * `m/139'/1'/0`.
- *
- * This is lnurl-wallet's path, and the one every implementation uses. The
- * draft's text roots the branch at `m/139'/d1..d4`, which is the very node
- * [deriveCashDomainNode] already derives for Part 1 secrets, so a wallet
- * following the text would find none of the reference wallet's notes.
+ * `m/139'/d1/d2/d3/d4` for one mint, as `privateKey || chainCode` hex: the
+ * address branch Part 2 note keys hang off - the exact node
+ * [deriveCashDomainNode] derives, with no separate purpose. An earlier
+ * reference-wallet extension deterministically derived Part 1 secrets off
+ * that same node too, under its own `1'` sub-purpose kept just for this
+ * branch to avoid colliding with it; that extension is gone, so there is
+ * nothing left to collide with.
  *
  * Bearer material for every note on the branch. Hand out [cashNodeToCx1] of it,
  * never the node.
