@@ -122,6 +122,9 @@ while IFS="$SEP" read -r name version license authors project manifest license_f
       bech32@0.9.1)
         override="$OVERRIDES/bech32-0.9.1.txt"
         ;;
+      r-efi@6.0.0)
+        override="$OVERRIDES/r-efi-6.0.0-AUTHORS.txt"
+        ;;
       uniffi@0.28.3|uniffi_*@0.28.3)
         override="$OVERRIDES/uniffi-rs-0.28.3-MPL-2.0.txt"
         ;;

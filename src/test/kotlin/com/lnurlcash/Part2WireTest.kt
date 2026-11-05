@@ -3,6 +3,7 @@ package com.lnurlcash
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -10,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import uniffi.lnurlcash_core.LnurlcashException
+import uniffi.lnurlcash_core.bearerNote
 
 /**
  * The LUD-25 Part 2 wire, through [LnurlcashClient]: a `ck1` wherever a k1
@@ -32,8 +34,10 @@ class Part2WireTest {
     private val part2: JsonObject by lazy { Vectors.load("part2.json") }
     private val mintPubkey: String by lazy { part2.obj("mint").str("mintPubkey") }
     private val notes: List<JsonObject> by lazy {
-        part2.array("branches")[0].jsonObject.array("notes").map { it.jsonObject }
+        // the first account's wallet chain at mint.example, S/0'/0/i
+        part2.array("branches")[0].jsonObject.array("accounts")[0].jsonObject.array("wallet").map { it.jsonObject }
     }
+    private val domain = "mint.example"
 
     private val k1 = "11".repeat(32)
 
@@ -101,26 +105,27 @@ class Part2WireTest {
             // would, and against the new note's ck1, as its holder would
             val signature = outcome.value.signature!!
             val id = decodeCp1(output.str("cp1"))!!
-            assertTrue(verifyNoteSignatureHash(id, 21_000, signature, mintPubkey))
-            assertTrue(verifyNoteSignature(output.str("ck1"), 21_000, signature, mintPubkey))
+            assertTrue(verifyNoteSignatureHash(id, domain, 21_000, signature, mintPubkey))
+            assertTrue(verifyNoteSignature(output.str("ck1"), domain, 21_000, signature, mintPubkey))
         }
     }
 
     @Test
-    fun `a hash output keeps h, which every mint understands`() {
+    fun `a hash output goes as p1, like a cp1`() {
         val hash = hashK1(k1)
         CannedService("""{"status":"OK","sig":"aa"}""").use { service ->
             val outcome = runBlocking {
                 LnurlcashClient().rotateWithHash("${service.url}/w/cb", notes[0].str("ck1"), hash)
             }
             assertTrue(outcome is MutationOutcome.Confirmed, "got $outcome")
-            assertEquals(hash, service.param("h"))
-            assertNull(service.param("p1"))
+            // LUD-25 names every output p1, a bearer note's hash included; h is no longer sent
+            assertEquals(hash, service.param("p1"))
+            assertNull(service.param("h"))
         }
     }
 
     @Test
-    fun `a split names a key and a hash each under its own name`() {
+    fun `a split names a key and a hash under p1 and p2 alike`() {
         val cp1 = notes[1].str("cp1")
         val hash = hashK1(k1)
         val body = """{"status":"OK","sig":"aa","sig2":"bb"}"""
@@ -133,17 +138,17 @@ class Part2WireTest {
             assertEquals(HashedSplitNotes(signature = "aa", changeSignature = "bb"), outcome.value)
             assertEquals("5000", service.param("amount"))
             assertEquals(cp1, service.param("p1"))
-            assertEquals(hash, service.param("h2"))
-            assertEquals(null to null, service.param("h") to service.param("p2"))
+            assertEquals(hash, service.param("p2"))
+            assertEquals(null to null, service.param("h") to service.param("h2"))
         }
         // and the other way round
         CannedService(body).use { service ->
             runBlocking {
                 LnurlcashClient().splitWithHash("${service.url}/w/cb", listOf(k1), 5_000, hash, cp1)
             }
-            assertEquals(hash, service.param("h"))
+            assertEquals(hash, service.param("p1"))
             assertEquals(cp1, service.param("p2"))
-            assertEquals(null to null, service.param("p1") to service.param("h2"))
+            assertEquals(null to null, service.param("h") to service.param("h2"))
         }
     }
 
@@ -252,8 +257,11 @@ class Part2WireTest {
     // ---- ids, lookups and note URLs ----
 
     @Test
-    fun `a Part 1 secret is filed and looked up under its hash`() {
-        assertEquals(hashK1(k1), noteIdOf(k1))
+    fun `a Part 1 secret is filed under its output key and looked up by its hash`() {
+        // a bearer note is the one-leaf hashlock under the NUMS key: its id is that key's
+        // hex(Q), and its hash is only the short form a lookup may name it by
+        assertEquals(bearerNote(hashK1(k1)).outputKey, noteIdOf(k1))
+        assertNotEquals(hashK1(k1), noteIdOf(k1))
         assertEquals(hashK1(k1), noteLookupOf(k1))
     }
 
@@ -269,7 +277,7 @@ class Part2WireTest {
     }
 
     @Test
-    fun `a Part 2 note is looked up by p and a hash by h`() {
+    fun `a note is looked up by p, a bearer note by its hash`() {
         val cp1 = notes[0].str("cp1")
         val byKey = buildNoteInfoUrlByHash("https://mint.example/w?k1=ab&amount=1", cp1)!!
         assertEquals(cp1, byKey.param("p"))
@@ -282,8 +290,9 @@ class Part2WireTest {
 
         val hash = hashK1(k1)
         val byHash = buildNoteInfoUrlByHash("https://mint.example/w", hash)!!
-        assertEquals(hash, byHash.param("h"))
-        assertNull(byHash.param("p"))
+        // every lookup is p now; h is no longer sent
+        assertEquals(hash, byHash.param("p"))
+        assertNull(byHash.param("h"))
 
         // the value that spends the note is never a lookup
         assertNull(buildNoteInfoUrlByHash("https://mint.example/w", notes[0].str("ck1")))

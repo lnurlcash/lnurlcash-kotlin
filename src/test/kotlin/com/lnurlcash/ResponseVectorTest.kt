@@ -58,7 +58,7 @@ class ResponseVectorTest {
         val vectors = Vectors.load("responses.json")
         assertEquals(1L, vectors.long("version"))
         assertEquals(carries.keys, vectors.obj("outcomes").keys, "every outcome the file names is graded here")
-        val cp1s = Vectors.load("part2.json").array("branches")[0].jsonObject.array("notes")
+        val cp1s = Vectors.load("part2.json").array("branches")[0].jsonObject.array("accounts")[0].jsonObject.array("wallet")
             .take(2).map { it.jsonObject.str("cp1") }
 
         val cases = vectors.array("cases").map { it.jsonObject }

@@ -33,11 +33,11 @@ internal class MockMint private constructor(
         }
     }
 
-    /** Bring a note into existence. Returns the signature the mint issued. */
+    /** Bring a note into existence. Returns the certificate (`c`) the mint issued. */
     fun credit(k1: String, amountMsat: Long): String? {
         val body = hook("/_test/credit?k1=$k1&amount=$amountMsat")
         check(body["status"] == "OK") { "credit failed: $body" }
-        return body["sig"]
+        return body["c"]
     }
 
     /**

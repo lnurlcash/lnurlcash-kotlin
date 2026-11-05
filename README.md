@@ -143,89 +143,117 @@ is the whole point.
 
 `getOrThrow()` exists for when you genuinely do not care, and says so.
 
-## Notes keyed by a public key (LUD-25 Part 2)
+## Notes keyed by a public key (LUD-25) and LUD-26 derivation
 
-A Part 2 note swaps the hash for a key pair. The wallet keeps `sk`, and the
-mint only ever sees `pk`, written `cp1...`. To spend the note you hand over
-`ck1...`, the 32-byte `pk` followed by a BIP-340 Schnorr signature by `sk`
-over `sha256("LNURLcash")`. The mint verifies the pair and uses `pk` to find
-the note. The mint's certificate,
-`cs1...`, carries the note amount in its prefix using BOLT 11 amount rules and
-contains the signature over `LNURLcash:<amount_msat>:<hex(pk)>`. A recipient
-can therefore recover both the claimed amount and the mint signature before
-checking the note offline.
+Every note is a taproot output key `Q`, written `cp1...`. The wallet keeps the
+secret key behind it, and the mint only ever sees `Q`. To spend the note you
+hand over `ck1...`: the 32-byte `Q` followed by a BIP-340 Schnorr signature by
+that key over the BIP-341 sighash of a canonical spend whose prevout is bound
+to the mint's domain. A `ck1` therefore spends at one mint only, which is why
+signing and checking one take the domain. A bearer note (a 64-hex preimage) is
+the same thing with a hashlock for a spending condition. The mint's
+certificate, `cs1...`, carries the note amount in its prefix using BOLT 11
+amount rules and contains the signature over
+`LNURLcash:<domain>:<amount_msat>:<hex(Q)>`. A recipient can therefore recover
+the amount and the mint signature, and check the note offline.
+
+LUD-26 says how a wallet derives those keys from a seed: plain BIP-32 below a
+per-mint root `S = m/139'/d1/d2/d3/d4`, with wallet notes at `S/a'/0/i`,
+change at `S/a'/1/i` and share notes at `S/a'/2/n'/i`. A share is exported to a
+mint as a `cx1`, so the mint can credit the holder's next key without being
+able to spend it.
 
 ```kotlin
-val node = deriveCashAddressNode(deriveCashRoot(seedHex), "mint.example") // bearer material
-val branch = cashNodeToCx1(node)
-val cx1 = encodeCx1(branch.pubkeyXOnly, branch.chainCode)    // watch-only
+val root = deriveCashRoot(seedHex)                            // m/139', bearer material
+val s = deriveServiceRoot(root, "mint.example")               // per mint; any URL or host, port dropped
 
-val i = 0u                                                // unsigned note index
-val pk = deriveNotePubkey(branch.pubkeyXOnly, branch.chainCode, i) // what a watcher derives
-val sk = deriveNoteSecretKey(node.take(64), node.drop(64), i)
-val ck1 = encodeCk1(signNoteOwnership(sk))                   // the bearer secret
+// a note the wallet holds: account 0, wallet chain, index 0
+val key = deriveNoteKey(s, NotePath.Wallet(account = 0, index = 0))
+val cp1 = encodeCp1(key.outputKey)                            // what a wallet names as an output
+val ck1 = encodeCk1(signNoteOwnership(key.secretKey, "mint.example")) // the bearer secret
 
-// persist i (or sk) FIRST: this library never sees what stands behind an output
-client.rotateWithHash(info.callback, oldK1, encodeCp1(pk))
+// persist the index (or the key) FIRST: this library never sees what stands behind an output
+client.rotateWithHash(info.callback, oldK1, cp1)
 
-verifyNoteSignature(ck1, amountMsat, cs1, mintPubkey)        // offline
-val certificate = decodeCs1WithAmount(cs1)!!                 // amount + signature
+verifyNoteSignature(ck1, "mint.example", amountMsat, cs1, mintPubkey)   // offline
+val certificate = decodeCs1WithAmount(cs1)!!                  // amount + signature
+
+// a share, for a Lightning Address
+val node = deriveShareNode(s, account = 0, share = 0)         // bearer material
+val cx1 = cashNodeToCx1(node)                                 // watch-only: hand this to the mint
+val next = deriveNotePubkey(cx1, 0u)                          // what the mint credits at index 0
+val proof = signAddressProof(node.take(64), "register", "mint.example", "alice", cx1)
 ```
+
+`NotePath` is `Wallet`, `Change` or `Share`, with plain `Int` levels (all are
+below 2^31), so it reads the same from Java.
+`deriveWalletNoteKey`, `deriveChangeNoteKey` and `deriveShareNoteKey` are the
+same call without the wrapper. `NoteKey.toString()` does not print the secret.
 
 `encodeCs1WithAmount`, `decodeCs1WithAmount` and
 `isCs1WithAmount` are the current wire API. The fixed-prefix `encodeCs1`,
 `decodeCs1` and `isCs1` remain for legacy notes; `decodeAnyCs1` and `isAnyCs1`
-are migration helpers. Verification accepts either form, matching the reference
-kit; decode the certificate separately if the application needs to compare its
-carried amount with another value.
+are migration helpers. `verifyNoteSignature` also reads a certificate a mint
+signed before luds `92abbb3`, which names no domain; decode the certificate
+separately if the application needs to compare its carried amount with another
+value. `verifyNoteSignatureHash` checks the current certificate only, over a
+`hex(Q)` you name.
 
-Reference-mint address management proves control with the address branch's
-index-0 private key. `signAddressProof(sk0, action, username)` returns the raw
-64-byte BIP-340 proof over `sha256("LNURLcash:<action>:<username>")`; action is
-`register` or `unregister`, and the username must be normalised exactly as it
-is sent to the service.
+Registration proofs are signed by the share's own key and bound to the service,
+the lowercased username and, for `register` and `update`, the `cx1` put on
+file: `signAddressProof(shareKey, action, domain, username, cx1)` returns the
+raw 64-byte BIP-340 signature, and `verifyAddressProof` is the service's check.
+`action` is `register`, `update` or `unregister` (which takes no `cx1`).
 
-From Java, the two note derivation functions have overloads taking a `long`
-index in `0..4294967295`; values outside that range throw
-`IllegalArgumentException`. The existing Kotlin `UInt` overloads remain available.
+Notes derived before LUD-26 sit at keys the new tree does not find. They stay
+readable for sweeping: `legacyBranchNode(root, host)` (the host as stored, port
+included), `legacyCx1Of`, `legacyDeriveNotePubkey` and
+`legacyDeriveNoteSecretKey`, with `purpose` one of the `LEGACY_PURPOSE_*`
+constants or `null` for the scheme before purposes. Rotate what you find into a
+LUD-26 key; never mint under them.
+
+From Java, `deriveNotePubkey(cx1, long)` takes an index in `0..4294967295`;
+values outside that range throw `IllegalArgumentException`. The Kotlin `UInt`
+overload remains available.
 
 ```java
-String node = LnurlcashKt.deriveCashAddressNode(cashRoot, "mint.example");
-Cx1 branch = LnurlcashKt.cashNodeToCx1(node);
-long index = 0L;
-String pk = LnurlcashKt.deriveNotePubkey(branch.getPubkeyXOnly(), branch.getChainCode(), index);
-String sk = LnurlcashKt.deriveNoteSecretKey(node.substring(0, 64), node.substring(64), index);
+String s = LnurlcashKt.deriveServiceRoot(cashRoot, "mint.example");
+NoteKey key = LnurlcashKt.deriveNoteKey(s, new NotePath.Wallet(0, 0));
+String cx1 = LnurlcashKt.cashNodeToCx1(LnurlcashKt.deriveShareNode(s, 0, 0));
+String next = LnurlcashKt.deriveNotePubkey(cx1, 0L);
 ```
 
-The wire takes both kinds. A `ck1` goes anywhere a k1 does. A `cp1` goes
-anywhere an output does: `requestMintInvoiceWithHash` sends it as the comment
-alone, `rotateWithHash`, `splitWithHash` and `mergeWithHash` send it as
-`p1`/`p2` where a hash keeps `h`/`h2`, and `buildNoteInfoUrlByHash` sends it as
-`p` where a hash keeps `h`.
+The wire takes both kinds. A `ck1` goes anywhere a k1 does. An output goes
+anywhere an output does as a `cp1` or a bearer note's hash:
+`requestMintInvoiceWithHash` sends it as the comment (a hash also sends `h`),
+`rotateWithHash`, `splitWithHash` and `mergeWithHash` send it as `p1`/`p2`
+whichever it is, and `buildNoteInfoUrlByHash` sends it as `p`. `h`/`h2` are no
+longer sent.
 
-`noteIdOf(k1)` is the id a mint files either kind under, and `noteLookupOf(k1)`
-what to look a note up by without disclosing it. A `ck1` is deterministic from
-its note key, so seed recovery reproduces it byte for byte. The decoder and
-lookup helpers also accept the old 65-byte recoverable-ECDSA shape so existing
-notes remain spendable; rotate those into a current 96-byte Schnorr `ck1`
-rather than issuing new legacy values. Compare notes by id, never by k1;
-`fetchNoteInfo` compares a mint's echo that way too.
+`noteIdOf(k1)` is the id a mint files any spend under, `hex(Q)`, and
+`noteLookupOf(k1)` what to look a note up by without disclosing it: the hash
+for a preimage, the `cp1` for anything else. Note that a bearer note's id is no
+longer `sha256(preimage)`; `hashK1` is the short form, not the id. A `ck1` is
+deterministic from its note key and domain, so seed recovery reproduces it byte
+for byte. The decoder and lookup helpers also accept the old 65-byte
+recoverable-ECDSA shape so existing notes remain spendable; rotate those into
+a current 96-byte Schnorr `ck1` rather than issuing new legacy values. Compare
+notes by id, never by k1; `fetchNoteInfo` compares a mint's echo that way too.
 
 Three things worth knowing:
 
 - **The `WithHash` mutations carry no secrets.** They never see the key behind
   the output, so an `Unknown` or `Unverifiable` from one hands nothing back.
   Save it before the call.
-- **The branch path is the spec's literal one.** It is `m/139'/d1/d2/d3/d4`,
-  with the hashing key at `m/139'/0`: the same node `deriveCashDomainNode`
-  returns. Wallets that derived under the earlier `m/139'/1'` hop hold notes
-  this path does not find.
-- **A `cx1` links every note on its branch.** It spends nothing, but whoever
-  holds it can list every key on the branch and ask the mint about each one.
+- **The tree is below a per-mint root, not one branch.** A wallet on this
+  version that scans only the LUD-26 tree finds none of the notes it minted
+  under 0.3.0 or earlier; sweep them with the `legacy*` functions.
+- **A `cx1` links every note on its share.** It spends nothing, but whoever
+  holds it can list every key on the share and ask the mint about each one.
 
-`deriveNostrAddressNode(secretKey, host)` roots a branch in a Nostr identity
-key, for a holder with no BIP-39 words. That one is an extension, not LUD-25; a
-mint sees an ordinary `cx1` either way.
+`deriveNostrServiceRoot(secretKey, domain)` roots the same tree in a Nostr
+identity key, for a holder with no BIP-39 words. That one is an extension, not
+LUD-26; a mint sees an ordinary `cx1` either way.
 
 ## What is in Rust and what is in Kotlin
 

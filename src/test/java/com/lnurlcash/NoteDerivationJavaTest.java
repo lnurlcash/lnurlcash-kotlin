@@ -5,37 +5,48 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+/** The LUD-26 derivation as plain Java sees it: Int levels, a sealed path, a Long note index. */
 class NoteDerivationJavaTest {
-    // Public conformance fixture from vectors/part2.json, first branch.
-    private static final String NODE =
-        "6e44409fddc788205f5b0eace8024bae91a2b57dc4e07a32bf9dbd732350dde9"
-        + "d751c4963c99fb3d08eb2e580f66f1c1463e5249a9435677bd0951e06f7edc6c";
+    // Public conformance fixture from vectors/part2.json, first branch (mint.example).
+    private static final String SERVICE_ROOT =
+        "72056e5cde21458b13689c3950904dfd327415a506d064290e5e5f4296a40543"
+        + "dd5e9504ddb6eefbafa4ad3b00ad421858fafc0ed9ea4abd9cb68793f845cfc1";
 
-    static void assertDerivation(String publicKey, String privateKey, String chainCode,
-                                 long index, String expectedPublicKey, String expectedSecretKey) {
-        assertEquals(expectedPublicKey, LnurlcashKt.deriveNotePubkey(publicKey, chainCode, index));
-        assertEquals(expectedSecretKey, LnurlcashKt.deriveNoteSecretKey(privateKey, chainCode, index));
+    @Test
+    void derivesAWalletNoteFromOrdinaryJavaInts() {
+        NoteKey viaPath = LnurlcashKt.deriveNoteKey(SERVICE_ROOT, new NotePath.Wallet(0, 0));
+        NoteKey viaHelper = LnurlcashKt.deriveWalletNoteKey(SERVICE_ROOT, 0, 0);
+        assertEquals(viaPath, viaHelper);
+        assertEquals("867fbf93ceb491d696a53c9f4c0f4a4a05bbfb2ab2c92b2ae052335071f1e195", viaPath.getSecretKey());
+        assertEquals("9820be6eb2fd00e6dd739f029e58f61f4ae19a8ded723fc670db052285be2f80", viaPath.getOutputKey());
     }
 
     @Test
-    void acceptsAnOrdinaryJavaIntLiteral() {
-        Cx1 branch = LnurlcashKt.cashNodeToCx1(NODE);
-        assertEquals("b52e0b9dcd39edd137cf4b6794d0d2a55f13c9aa968078394d49159651b5a02f",
-            LnurlcashKt.deriveNotePubkey(branch.getPubkeyXOnly(), branch.getChainCode(), 0));
-        assertEquals("c809325604f901c494bebab0f02d74d43cb3d58c143b753c2b749d1733288f64",
-            LnurlcashKt.deriveNoteSecretKey(NODE.substring(0, 64), NODE.substring(64), 0));
+    void aWatcherAndTheHolderAgreeOnAShareNote() {
+        String node = LnurlcashKt.deriveShareNode(SERVICE_ROOT, 0, 0);
+        String cx1 = LnurlcashKt.cashNodeToCx1(node);
+        for (int index : new int[] {0, 3, Integer.MAX_VALUE}) {
+            assertEquals(
+                LnurlcashKt.deriveShareNoteKey(SERVICE_ROOT, 0, 0, index).getOutputKey(),
+                LnurlcashKt.deriveNotePubkey(cx1, (long) index));
+        }
     }
 
     @Test
-    void rejectsOutOfRangeIndicesBeforeDerivation() {
+    void rejectsOutOfRangeLevelsBeforeDerivation() {
+        assertThrows(IllegalArgumentException.class, () -> new NotePath.Wallet(-1, 0));
+        assertThrows(IllegalArgumentException.class, () -> new NotePath.Change(0, -1));
+        assertThrows(IllegalArgumentException.class, () -> new NotePath.Share(0, -1, 0));
+        assertThrows(IllegalArgumentException.class, () -> LnurlcashKt.deriveShareNode(SERVICE_ROOT, -1, 0));
+    }
+
+    @Test
+    void rejectsOutOfRangeNoteIndicesBeforeDerivation() {
         for (long index : new long[] {-1L, Long.MIN_VALUE, 0x1_0000_0000L, Long.MAX_VALUE}) {
             // Invalid key material ensures index validation precedes the native call.
-            IllegalArgumentException publicError = assertThrows(IllegalArgumentException.class,
-                () -> LnurlcashKt.deriveNotePubkey("", "", index));
-            IllegalArgumentException secretError = assertThrows(IllegalArgumentException.class,
-                () -> LnurlcashKt.deriveNoteSecretKey("", "", index));
-            assertEquals("index must be in 0..4294967295", publicError.getMessage());
-            assertEquals("index must be in 0..4294967295", secretError.getMessage());
+            IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> LnurlcashKt.deriveNotePubkey("", index));
+            assertEquals("index must be in 0..4294967295", error.getMessage());
         }
     }
 }

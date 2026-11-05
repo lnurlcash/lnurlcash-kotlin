@@ -871,6 +871,68 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -890,6 +952,10 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_apply_mint_fee(`grossMsat`: Long,`fee`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Long
+    fun uniffi_lnurlcash_core_fn_func_bearer_cw1(`preimageHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_bearer_note(`hHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_build_note_info_url_by_hash(`withdrawLink`: RustBuffer.ByValue,`h`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_build_note_url(`withdrawLink`: RustBuffer.ByValue,`k1`: RustBuffer.ByValue,`amountMsat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
@@ -897,6 +963,18 @@ internal interface UniffiLib : Library {
     fun uniffi_lnurlcash_core_fn_func_cash_domain_indices(`rootHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_cash_node_to_cx1(`nodeHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_check_leaf(`leafVersion`: Byte,`scriptHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_check_note(`k1`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`amountMsat`: Long,`signature`: RustBuffer.ByValue,`mintPubkeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_check_note_certificate(`reference`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`amountMsat`: Long,`signature`: RustBuffer.ByValue,`mintPubkeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_check_note_url(`url`: RustBuffer.ByValue,`mintPubkeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_check_spend(`k1`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_check_time_claim(`locktime`: Int,`sequence`: Int,`now`: Long,`lockedAt`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_decode_any_cs1(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -910,9 +988,11 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_decode_cs1_with_amount(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_decode_cw1(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_decode_cx1(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_derive_cash_address_node(`rootHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_decode_note(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_derive_cash_child(`nodeHex`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -922,17 +1002,21 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_derive_cash_root(`seedHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_derive_nostr_address_node(`secretKeyHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_derive_nostr_cash_seed(`secretKeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_derive_note_pubkey(`branchPubkeyXOnlyHex`: RustBuffer.ByValue,`chainCodeHex`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_derive_nostr_service_root(`secretKeyHex`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_derive_note_key(`serviceRootHex`: RustBuffer.ByValue,`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_derive_note_pubkey(`cx1`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_derive_note_root(`seedHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_derive_note_secret(`rootHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_derive_note_secret_key(`branchPrivateKeyHex`: RustBuffer.ByValue,`chainCodeHex`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_derive_service_root(`rootHex`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_derive_share_node(`serviceRootHex`: RustBuffer.ByValue,`account`: Int,`share`: Int,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_describe_mint_fee(`fee`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -944,13 +1028,17 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_encode_cs1_with_amount(`amountMsat`: Long,`signatureHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_encode_cx1(`pubkeyXOnlyHex`: RustBuffer.ByValue,`chainCodeHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_encode_cw1(`cw1`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_encode_cx1(`chainCodeHex`: RustBuffer.ByValue,`pubkeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_generate_note_secret(uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_gross_up_for_mint_fee(`netMsat`: Long,`fee`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Long
     fun uniffi_lnurlcash_core_fn_func_hash_k1(`k1`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_internal_transfer_request(`payRequestBody`: RustBuffer.ByValue,`noteDomain`: RustBuffer.ByValue,`k1`: RustBuffer.ByValue,`amountMsat`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_invoice_request(`payCallback`: RustBuffer.ByValue,`amountMsat`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -968,10 +1056,24 @@ internal interface UniffiLib : Library {
     ): Byte
     fun uniffi_lnurlcash_core_fn_func_is_cs1_with_amount(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
+    fun uniffi_lnurlcash_core_fn_func_is_cw1(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
     fun uniffi_lnurlcash_core_fn_func_is_cx1(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
     fun uniffi_lnurlcash_core_fn_func_is_preimage(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
+    fun uniffi_lnurlcash_core_fn_func_is_x_only_point(`valueHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+    fun uniffi_lnurlcash_core_fn_func_key_path_sighash(`outputKeyHex`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_legacy_branch_node(`rootHex`: RustBuffer.ByValue,`host`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_legacy_cx1_of(`nodeHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_legacy_derive_note_pubkey(`legacyCx1`: RustBuffer.ByValue,`purpose`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_legacy_derive_note_secret_key(`nodeHex`: RustBuffer.ByValue,`purpose`: RustBuffer.ByValue,`index`: Int,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_melt_request(`callback`: RustBuffer.ByValue,`k1`: RustBuffer.ByValue,`pr`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_merge_request(`callback`: RustBuffer.ByValue,`k1s`: RustBuffer.ByValue,`newSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
@@ -998,6 +1100,12 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_note_signature(`url`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_note_signature_message_for_hash(`id`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`amountMsat`: Long,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_output_key_of(`scriptHex`: RustBuffer.ByValue,`controlBlockHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_parse_internal_transfer(`body`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
     fun uniffi_lnurlcash_core_fn_func_parse_invoice(`body`: RustBuffer.ByValue,`requestedMsat`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_parse_mint_address(`body`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
@@ -1008,13 +1116,15 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_parse_note_info(`body`: RustBuffer.ByValue,`queriedUrl`: RustBuffer.ByValue,`policy`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_parse_note_info_by_hash(`body`: RustBuffer.ByValue,`policy`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_parse_pay_request(`body`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_parse_verify(`body`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_pay_request_request(`url`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_recover_note_ownership_pubkey(`signatureHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_recover_note_ownership_pubkey(`signatureHex`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_resolve_lnurl_input(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -1028,17 +1138,31 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_same_invoice(`a`: RustBuffer.ByValue,`b`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
-    fun uniffi_lnurlcash_core_fn_func_sign_address_proof(`indexZeroSecretKeyHex`: RustBuffer.ByValue,`action`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_script_path_sighash(`outputKeyHex`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`leafScriptHex`: RustBuffer.ByValue,`locktime`: Int,`sequence`: Int,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_sign_note_ownership(`secretKeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_sign_address_proof(`shareSecretKeyHex`: RustBuffer.ByValue,`action`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`cx1`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_sign_note_ownership(`secretKeyHex`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_spend_domain_of(`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_split_request(`callback`: RustBuffer.ByValue,`k1s`: RustBuffer.ByValue,`amountMsat`: Long,`newSecret`: RustBuffer.ByValue,`changeSecret`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     fun uniffi_lnurlcash_core_fn_func_split_request_with_hash(`callback`: RustBuffer.ByValue,`k1s`: RustBuffer.ByValue,`amountMsat`: Long,`h`: RustBuffer.ByValue,`h2`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-    fun uniffi_lnurlcash_core_fn_func_verify_note_signature(`k1`: RustBuffer.ByValue,`amountMsat`: Long,`signatureHex`: RustBuffer.ByValue,`mintPubkeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_tapbranch_hash(`aHex`: RustBuffer.ByValue,`bHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_tapleaf_hash(`scriptHex`: RustBuffer.ByValue,`leafVersion`: Byte,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_taproot_tweak(`internalKeyHex`: RustBuffer.ByValue,`merkleRootHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_taproot_tweak_secret_key(`secretKeyHex`: RustBuffer.ByValue,`merkleRootHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    fun uniffi_lnurlcash_core_fn_func_verify_address_proof(`signerCx1`: RustBuffer.ByValue,`signatureHex`: RustBuffer.ByValue,`action`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`cx1`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
-    fun uniffi_lnurlcash_core_fn_func_verify_note_signature_hash(`h`: RustBuffer.ByValue,`amountMsat`: Long,`signatureHex`: RustBuffer.ByValue,`mintPubkeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    fun uniffi_lnurlcash_core_fn_func_verify_note_signature(`k1`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`amountMsat`: Long,`signature`: RustBuffer.ByValue,`mintPubkeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+    fun uniffi_lnurlcash_core_fn_func_verify_note_signature_hash(`id`: RustBuffer.ByValue,`domain`: RustBuffer.ByValue,`amountMsat`: Long,`signature`: RustBuffer.ByValue,`mintPubkeyHex`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): Byte
     fun uniffi_lnurlcash_core_fn_func_verify_request(`verifyUrl`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -1162,6 +1286,10 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_apply_mint_fee(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_bearer_cw1(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_bearer_note(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_build_note_info_url_by_hash(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_build_note_url(
@@ -1169,6 +1297,18 @@ internal interface UniffiLib : Library {
     fun uniffi_lnurlcash_core_checksum_func_cash_domain_indices(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_cash_node_to_cx1(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_check_leaf(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_check_note(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_check_note_certificate(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_check_note_url(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_check_spend(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_check_time_claim(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_decode_any_cs1(
     ): Short
@@ -1182,9 +1322,11 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_decode_cs1_with_amount(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_decode_cw1(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_decode_cx1(
     ): Short
-    fun uniffi_lnurlcash_core_checksum_func_derive_cash_address_node(
+    fun uniffi_lnurlcash_core_checksum_func_decode_note(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_derive_cash_child(
     ): Short
@@ -1194,9 +1336,11 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_derive_cash_root(
     ): Short
-    fun uniffi_lnurlcash_core_checksum_func_derive_nostr_address_node(
-    ): Short
     fun uniffi_lnurlcash_core_checksum_func_derive_nostr_cash_seed(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_derive_nostr_service_root(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_derive_note_key(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_derive_note_pubkey(
     ): Short
@@ -1204,7 +1348,9 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_derive_note_secret(
     ): Short
-    fun uniffi_lnurlcash_core_checksum_func_derive_note_secret_key(
+    fun uniffi_lnurlcash_core_checksum_func_derive_service_root(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_derive_share_node(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_describe_mint_fee(
     ): Short
@@ -1216,6 +1362,8 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_encode_cs1_with_amount(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_encode_cw1(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_encode_cx1(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_generate_note_secret(
@@ -1223,6 +1371,8 @@ internal interface UniffiLib : Library {
     fun uniffi_lnurlcash_core_checksum_func_gross_up_for_mint_fee(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_hash_k1(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_internal_transfer_request(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_invoice_request(
     ): Short
@@ -1240,9 +1390,23 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_is_cs1_with_amount(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_is_cw1(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_is_cx1(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_is_preimage(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_is_x_only_point(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_key_path_sighash(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_legacy_branch_node(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_legacy_cx1_of(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_legacy_derive_note_pubkey(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_legacy_derive_note_secret_key(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_melt_request(
     ): Short
@@ -1270,6 +1434,12 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_note_signature(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_note_signature_message_for_hash(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_output_key_of(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_parse_internal_transfer(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_parse_invoice(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_parse_mint_address(
@@ -1279,6 +1449,8 @@ internal interface UniffiLib : Library {
     fun uniffi_lnurlcash_core_checksum_func_parse_mutation(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_parse_note_info(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_parse_note_info_by_hash(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_parse_pay_request(
     ): Short
@@ -1300,13 +1472,27 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_same_invoice(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_script_path_sighash(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_sign_address_proof(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_sign_note_ownership(
     ): Short
+    fun uniffi_lnurlcash_core_checksum_func_spend_domain_of(
+    ): Short
     fun uniffi_lnurlcash_core_checksum_func_split_request(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_split_request_with_hash(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_tapbranch_hash(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_tapleaf_hash(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_taproot_tweak(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_taproot_tweak_secret_key(
+    ): Short
+    fun uniffi_lnurlcash_core_checksum_func_verify_address_proof(
     ): Short
     fun uniffi_lnurlcash_core_checksum_func_verify_note_signature(
     ): Short
@@ -1341,7 +1527,13 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_apply_mint_fee() != 39496.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_build_note_info_url_by_hash() != 2166.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_bearer_cw1() != 60659.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_bearer_note() != 50439.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_build_note_info_url_by_hash() != 22670.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_build_note_url() != 43552.toShort()) {
@@ -1350,7 +1542,25 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_cash_domain_indices() != 9288.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_cash_node_to_cx1() != 7905.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_cash_node_to_cx1() != 22395.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_check_leaf() != 34426.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_check_note() != 30899.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_check_note_certificate() != 26959.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_check_note_url() != 46182.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_check_spend() != 3164.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_check_time_claim() != 40769.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_decode_any_cs1() != 46599.toShort()) {
@@ -1362,7 +1572,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_decode_ck1() != 31180.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_decode_cp1() != 19150.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_decode_cp1() != 28366.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_decode_cs1() != 19933.toShort()) {
@@ -1371,16 +1581,19 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_decode_cs1_with_amount() != 35660.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_decode_cx1() != 61708.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_decode_cw1() != 8168.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_address_node() != 35510.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_decode_cx1() != 6413.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_decode_note() != 56169.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_child() != 20172.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_domain_node() != 15623.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_domain_node() != 22133.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_master() != 56732.toShort()) {
@@ -1389,13 +1602,16 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_derive_cash_root() != 21989.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_derive_nostr_address_node() != 26155.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_nostr_cash_seed() != 177.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_derive_nostr_cash_seed() != 39148.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_nostr_service_root() != 44092.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_derive_note_pubkey() != 54209.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_note_key() != 50352.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_note_pubkey() != 57516.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_derive_note_root() != 15369.toShort()) {
@@ -1404,16 +1620,19 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_derive_note_secret() != 21125.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_derive_note_secret_key() != 57144.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_service_root() != 8842.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_derive_share_node() != 55832.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_describe_mint_fee() != 23571.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_encode_ck1() != 9502.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_encode_ck1() != 4641.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_encode_cp1() != 19711.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_encode_cp1() != 42552.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_encode_cs1() != 21310.toShort()) {
@@ -1422,7 +1641,10 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_encode_cs1_with_amount() != 45142.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_encode_cx1() != 52934.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_encode_cw1() != 18587.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_encode_cx1() != 59253.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_generate_note_secret() != 6674.toShort()) {
@@ -1431,7 +1653,10 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_gross_up_for_mint_fee() != 10886.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_hash_k1() != 33364.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_hash_k1() != 38574.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_internal_transfer_request() != 46732.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_invoice_request() != 4241.toShort()) {
@@ -1458,10 +1683,31 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_is_cs1_with_amount() != 32683.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_lnurlcash_core_checksum_func_is_cw1() != 39577.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_lnurlcash_core_checksum_func_is_cx1() != 60146.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_is_preimage() != 13746.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_is_x_only_point() != 7410.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_key_path_sighash() != 42406.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_legacy_branch_node() != 39037.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_legacy_cx1_of() != 15498.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_legacy_derive_note_pubkey() != 35501.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_legacy_derive_note_secret_key() != 34188.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_melt_request() != 43674.toShort()) {
@@ -1482,13 +1728,13 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_mint_invoice_request() != 17194.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_mint_invoice_request_with_hash() != 42481.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_mint_invoice_request_with_hash() != 32880.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_note_declared_amount() != 10356.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_note_id_of() != 26706.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_note_id_of() != 36174.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_note_info_request() != 54072.toShort()) {
@@ -1497,10 +1743,19 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_note_k1() != 1901.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_note_lookup_of() != 12564.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_note_lookup_of() != 21266.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_note_signature() != 55507.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_note_signature_message_for_hash() != 19612.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_output_key_of() != 52377.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_parse_internal_transfer() != 31168.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_parse_invoice() != 11037.toShort()) {
@@ -1512,10 +1767,13 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_parse_mint_fee() != 51423.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_parse_mutation() != 24961.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_parse_mutation() != 29181.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_parse_note_info() != 36779.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_parse_note_info() != 39791.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_parse_note_info_by_hash() != 9305.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_parse_pay_request() != 5684.toShort()) {
@@ -1527,7 +1785,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_pay_request_request() != 39643.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_recover_note_ownership_pubkey() != 56629.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_recover_note_ownership_pubkey() != 8678.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_resolve_lnurl_input() != 55853.toShort()) {
@@ -1542,28 +1800,49 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_lnurlcash_core_checksum_func_rotate_request() != 54568.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_rotate_request_with_hash() != 58134.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_rotate_request_with_hash() != 3283.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_same_invoice() != 56118.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_sign_address_proof() != 51046.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_script_path_sighash() != 57660.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_sign_note_ownership() != 54091.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_sign_address_proof() != 59531.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_sign_note_ownership() != 57162.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_spend_domain_of() != 54663.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_split_request() != 61468.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_split_request_with_hash() != 10194.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_split_request_with_hash() != 39398.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_verify_note_signature() != 60107.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_tapbranch_hash() != 4020.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_lnurlcash_core_checksum_func_verify_note_signature_hash() != 20555.toShort()) {
+    if (lib.uniffi_lnurlcash_core_checksum_func_tapleaf_hash() != 59996.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_taproot_tweak() != 30577.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_taproot_tweak_secret_key() != 27930.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_verify_address_proof() != 12496.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_verify_note_signature() != 65517.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_lnurlcash_core_checksum_func_verify_note_signature_hash() != 19819.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_lnurlcash_core_checksum_func_verify_request() != 16338.toShort()) {
@@ -1621,6 +1900,29 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
  * @suppress
  * */
 object NoPointer
+
+/**
+ * @suppress
+ */
+public object FfiConverterUByte: FfiConverter<UByte, Byte> {
+    override fun lift(value: Byte): UByte {
+        return value.toUByte()
+    }
+
+    override fun read(buf: ByteBuffer): UByte {
+        return lift(buf.get())
+    }
+
+    override fun lower(value: UByte): Byte {
+        return value.toByte()
+    }
+
+    override fun allocationSize(value: UByte) = 1UL
+
+    override fun write(value: UByte, buf: ByteBuffer) {
+        buf.put(value.toByte())
+    }
+}
 
 /**
  * @suppress
@@ -1751,6 +2053,45 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
 
 
 /**
+ * A bearer note, as hex.
+ */
+data class FfiBearerNote (
+    var `outputKey`: kotlin.String,
+    var `controlBlock`: kotlin.String,
+    var `leaf`: kotlin.String
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiBearerNote: FfiConverterRustBuffer<FfiBearerNote> {
+    override fun read(buf: ByteBuffer): FfiBearerNote {
+        return FfiBearerNote(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiBearerNote) = (
+            FfiConverterString.allocationSize(value.`outputKey`) +
+            FfiConverterString.allocationSize(value.`controlBlock`) +
+            FfiConverterString.allocationSize(value.`leaf`)
+    )
+
+    override fun write(value: FfiBearerNote, buf: ByteBuffer) {
+            FfiConverterString.write(value.`outputKey`, buf)
+            FfiConverterString.write(value.`controlBlock`, buf)
+            FfiConverterString.write(value.`leaf`, buf)
+    }
+}
+
+
+
+/**
  * An amount-bearing mint certificate, with its signature bytes as hex.
  */
 data class FfiCs1 (
@@ -1786,11 +2127,64 @@ public object FfiConverterTypeFfiCs1: FfiConverterRustBuffer<FfiCs1> {
 
 
 /**
- * A watch-only branch, both halves as hex.
+ * A script-path spend, every byte string as hex.
+ */
+data class FfiCw1 (
+    var `locktime`: kotlin.UInt,
+    var `sequence`: kotlin.UInt,
+    var `script`: kotlin.String,
+    var `controlBlock`: kotlin.String,
+    /**
+     * Bottom of the stack first.
+     */
+    var `witness`: List<kotlin.String>
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiCw1: FfiConverterRustBuffer<FfiCw1> {
+    override fun read(buf: ByteBuffer): FfiCw1 {
+        return FfiCw1(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiCw1) = (
+            FfiConverterUInt.allocationSize(value.`locktime`) +
+            FfiConverterUInt.allocationSize(value.`sequence`) +
+            FfiConverterString.allocationSize(value.`script`) +
+            FfiConverterString.allocationSize(value.`controlBlock`) +
+            FfiConverterSequenceString.allocationSize(value.`witness`)
+    )
+
+    override fun write(value: FfiCw1, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`locktime`, buf)
+            FfiConverterUInt.write(value.`sequence`, buf)
+            FfiConverterString.write(value.`script`, buf)
+            FfiConverterString.write(value.`controlBlock`, buf)
+            FfiConverterSequenceString.write(value.`witness`, buf)
+    }
+}
+
+
+
+/**
+ * A share's xpub, both halves as hex.
  */
 data class FfiCx1 (
-    var `pubkeyXOnly`: kotlin.String,
-    var `chainCode`: kotlin.String
+    var `chainCode`: kotlin.String,
+    /**
+     * Compressed, 33 bytes.
+     */
+    var `pubkey`: kotlin.String
 ) {
 
     companion object
@@ -1808,13 +2202,13 @@ public object FfiConverterTypeFfiCx1: FfiConverterRustBuffer<FfiCx1> {
     }
 
     override fun allocationSize(value: FfiCx1) = (
-            FfiConverterString.allocationSize(value.`pubkeyXOnly`) +
-            FfiConverterString.allocationSize(value.`chainCode`)
+            FfiConverterString.allocationSize(value.`chainCode`) +
+            FfiConverterString.allocationSize(value.`pubkey`)
     )
 
     override fun write(value: FfiCx1, buf: ByteBuffer) {
-            FfiConverterString.write(value.`pubkeyXOnly`, buf)
             FfiConverterString.write(value.`chainCode`, buf)
+            FfiConverterString.write(value.`pubkey`, buf)
     }
 }
 
@@ -1938,7 +2332,12 @@ public object FfiConverterTypeFfiMintAddress: FfiConverterRustBuffer<FfiMintAddr
 
 data class FfiMintFee (
     var `baseFeeMsat`: kotlin.ULong,
-    var `feePpm`: kotlin.ULong
+    var `feePpm`: kotlin.ULong,
+    /**
+     * LUD-26's fee per Lightning Address registration. Null when not
+     * advertised: refuse to pay a registration invoice then.
+     */
+    var `addressFeeMsat`: kotlin.ULong?
 ) {
 
     companion object
@@ -1952,17 +2351,20 @@ public object FfiConverterTypeFfiMintFee: FfiConverterRustBuffer<FfiMintFee> {
         return FfiMintFee(
             FfiConverterULong.read(buf),
             FfiConverterULong.read(buf),
+            FfiConverterOptionalULong.read(buf),
         )
     }
 
     override fun allocationSize(value: FfiMintFee) = (
             FfiConverterULong.allocationSize(value.`baseFeeMsat`) +
-            FfiConverterULong.allocationSize(value.`feePpm`)
+            FfiConverterULong.allocationSize(value.`feePpm`) +
+            FfiConverterOptionalULong.allocationSize(value.`addressFeeMsat`)
     )
 
     override fun write(value: FfiMintFee, buf: ByteBuffer) {
             FfiConverterULong.write(value.`baseFeeMsat`, buf)
             FfiConverterULong.write(value.`feePpm`, buf)
+            FfiConverterOptionalULong.write(value.`addressFeeMsat`, buf)
     }
 }
 
@@ -1970,9 +2372,8 @@ public object FfiConverterTypeFfiMintFee: FfiConverterRustBuffer<FfiMintFee> {
 
 data class FfiMutation (
     /**
-     * Always present for a `cp1` output: its `cs1` certificate. For a plain
-     * hash output null, unless the service still issues the old Part 1
-     * signature over the hash.
+     * The `cs1` for the first output. Always present for a `cp1` output; for
+     * a bearer output named by its hash, null from a mint with no signer.
      */
     var `signature`: kotlin.String?,
     /**
@@ -2011,6 +2412,196 @@ public object FfiConverterTypeFfiMutation: FfiConverterRustBuffer<FfiMutation> {
             FfiConverterOptionalString.write(value.`changeSignature`, buf)
             FfiConverterOptionalString.write(value.`pr`, buf)
             FfiConverterOptionalString.write(value.`verify`, buf)
+    }
+}
+
+
+
+/**
+ * What an offline check of a certified note found.
+ */
+data class FfiNoteCheck (
+    /**
+     * The note, `hex(Q)`.
+     */
+    var `outputKey`: kotlin.String,
+    var `spend`: FfiSpendVerdict,
+    var `certificate`: FfiCertifiedOver,
+    /**
+     * Certified, and opened by the spend under a scheme mints accept.
+     */
+    var `verified`: kotlin.Boolean
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiNoteCheck: FfiConverterRustBuffer<FfiNoteCheck> {
+    override fun read(buf: ByteBuffer): FfiNoteCheck {
+        return FfiNoteCheck(
+            FfiConverterString.read(buf),
+            FfiConverterTypeFfiSpendVerdict.read(buf),
+            FfiConverterTypeFfiCertifiedOver.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiNoteCheck) = (
+            FfiConverterString.allocationSize(value.`outputKey`) +
+            FfiConverterTypeFfiSpendVerdict.allocationSize(value.`spend`) +
+            FfiConverterTypeFfiCertifiedOver.allocationSize(value.`certificate`) +
+            FfiConverterBoolean.allocationSize(value.`verified`)
+    )
+
+    override fun write(value: FfiNoteCheck, buf: ByteBuffer) {
+            FfiConverterString.write(value.`outputKey`, buf)
+            FfiConverterTypeFfiSpendVerdict.write(value.`spend`, buf)
+            FfiConverterTypeFfiCertifiedOver.write(value.`certificate`, buf)
+            FfiConverterBoolean.write(value.`verified`, buf)
+    }
+}
+
+
+
+/**
+ * What a `?p=` lookup returns: the same, with no `k1`, since the request
+ * named the note without its spend.
+ */
+data class FfiNoteInfoByHash (
+    var `callback`: kotlin.String,
+    var `maxWithdrawable`: kotlin.ULong,
+    var `minWithdrawable`: kotlin.ULong,
+    var `defaultDescription`: kotlin.String?,
+    var `mintPubkey`: kotlin.String?,
+    /**
+     * `c`, as sent and unverified. Check it with
+     * [`check_note_certificate`] against what was looked up.
+     */
+    var `signature`: kotlin.String?
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiNoteInfoByHash: FfiConverterRustBuffer<FfiNoteInfoByHash> {
+    override fun read(buf: ByteBuffer): FfiNoteInfoByHash {
+        return FfiNoteInfoByHash(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiNoteInfoByHash) = (
+            FfiConverterString.allocationSize(value.`callback`) +
+            FfiConverterULong.allocationSize(value.`maxWithdrawable`) +
+            FfiConverterULong.allocationSize(value.`minWithdrawable`) +
+            FfiConverterOptionalString.allocationSize(value.`defaultDescription`) +
+            FfiConverterOptionalString.allocationSize(value.`mintPubkey`) +
+            FfiConverterOptionalString.allocationSize(value.`signature`)
+    )
+
+    override fun write(value: FfiNoteInfoByHash, buf: ByteBuffer) {
+            FfiConverterString.write(value.`callback`, buf)
+            FfiConverterULong.write(value.`maxWithdrawable`, buf)
+            FfiConverterULong.write(value.`minWithdrawable`, buf)
+            FfiConverterOptionalString.write(value.`defaultDescription`, buf)
+            FfiConverterOptionalString.write(value.`mintPubkey`, buf)
+            FfiConverterOptionalString.write(value.`signature`, buf)
+    }
+}
+
+
+
+/**
+ * A note's keys, as hex. The secret key is bearer material.
+ */
+data class FfiNoteKey (
+    var `secretKey`: kotlin.String,
+    /**
+     * Compressed, so its y parity is visible.
+     */
+    var `pubkey`: kotlin.String,
+    /**
+     * `Q`, the note.
+     */
+    var `outputKey`: kotlin.String
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiNoteKey: FfiConverterRustBuffer<FfiNoteKey> {
+    override fun read(buf: ByteBuffer): FfiNoteKey {
+        return FfiNoteKey(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiNoteKey) = (
+            FfiConverterString.allocationSize(value.`secretKey`) +
+            FfiConverterString.allocationSize(value.`pubkey`) +
+            FfiConverterString.allocationSize(value.`outputKey`)
+    )
+
+    override fun write(value: FfiNoteKey, buf: ByteBuffer) {
+            FfiConverterString.write(value.`secretKey`, buf)
+            FfiConverterString.write(value.`pubkey`, buf)
+            FfiConverterString.write(value.`outputKey`, buf)
+    }
+}
+
+
+
+/**
+ * A verified `ck1` payload's note key, and whether it was signed under a
+ * deprecated scheme.
+ */
+data class FfiNoteOwner (
+    var `pubkeyXOnly`: kotlin.String,
+    /**
+     * Signed over a fixed message, or the 65-byte recoverable shape: still
+     * spendable, but rotate it.
+     */
+    var `legacy`: kotlin.Boolean
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiNoteOwner: FfiConverterRustBuffer<FfiNoteOwner> {
+    override fun read(buf: ByteBuffer): FfiNoteOwner {
+        return FfiNoteOwner(
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiNoteOwner) = (
+            FfiConverterString.allocationSize(value.`pubkeyXOnly`) +
+            FfiConverterBoolean.allocationSize(value.`legacy`)
+    )
+
+    override fun write(value: FfiNoteOwner, buf: ByteBuffer) {
+            FfiConverterString.write(value.`pubkeyXOnly`, buf)
+            FfiConverterBoolean.write(value.`legacy`, buf)
     }
 }
 
@@ -2097,15 +2688,14 @@ public object FfiConverterTypeFfiPayRequest: FfiConverterRustBuffer<FfiPayReques
  */
 data class FfiPolicy (
     /**
-     * Demand the raw Part 1 signature over a legacy hash output, matching the
-     * committed reference wallet. Off by default to admit a reference mint
-     * running without a signer. A `cp1` output is owed its `cs1` certificate
-     * whatever this says.
+     * Demand a certificate for a bearer output named by its hash too. Off by
+     * default to admit a mint running without a signer. A `cp1` output is
+     * owed its `cs1` certificate whatever this says.
      */
     var `requireSignatures`: kotlin.Boolean = false,
     /**
      * Refuse a withdrawRequest that publishes no valid `mintPubkey`. On by
-     * default; off only for a Part 1-only service that publishes none.
+     * default; off only for a service that publishes none.
      */
     var `requireMintPubkey`: kotlin.Boolean = true
 ) {
@@ -2143,7 +2733,7 @@ public object FfiConverterTypeFfiPolicy: FfiConverterRustBuffer<FfiPolicy> {
 data class FfiRequest (
     var `url`: kotlin.String,
     /**
-     * Fresh secrets this request disclosed the hashes of. Persist these
+     * Fresh preimages this request disclosed the hashes of. Persist these
      * BEFORE performing the GET: if the answer is lost, they may be the only
      * copies of notes the service has already minted.
      */
@@ -2152,8 +2742,9 @@ data class FfiRequest (
      * The outputs a rotate, split or merge named, exactly as sent:
      * `[output]` for a rotate or merge, `[output, change]` for a split, and
      * empty for every other request. Hand them to [`parse_mutation`] with
-     * the response: a `cp1` output is owed a certificate and a hash output is
-     * not, and this is how the parser knows which it asked for. Not secret.
+     * the response: a `cp1` output is owed a certificate whatever the
+     * policy, and this is how the parser knows which it asked for. Not
+     * secret.
      */
     var `outputs`: List<kotlin.String>
 ) {
@@ -2183,6 +2774,76 @@ public object FfiConverterTypeFfiRequest: FfiConverterRustBuffer<FfiRequest> {
             FfiConverterString.write(value.`url`, buf)
             FfiConverterSequenceString.write(value.`newSecrets`, buf)
             FfiConverterSequenceString.write(value.`outputs`, buf)
+    }
+}
+
+
+
+/**
+ * A spend's note, `hex(Q)`, and whether the spend opens it.
+ */
+data class FfiSpendCheck (
+    var `outputKey`: kotlin.String,
+    var `verdict`: FfiSpendVerdict
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSpendCheck: FfiConverterRustBuffer<FfiSpendCheck> {
+    override fun read(buf: ByteBuffer): FfiSpendCheck {
+        return FfiSpendCheck(
+            FfiConverterString.read(buf),
+            FfiConverterTypeFfiSpendVerdict.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiSpendCheck) = (
+            FfiConverterString.allocationSize(value.`outputKey`) +
+            FfiConverterTypeFfiSpendVerdict.allocationSize(value.`verdict`)
+    )
+
+    override fun write(value: FfiSpendCheck, buf: ByteBuffer) {
+            FfiConverterString.write(value.`outputKey`, buf)
+            FfiConverterTypeFfiSpendVerdict.write(value.`verdict`, buf)
+    }
+}
+
+
+
+/**
+ * A tweaked output key and its parity, 0 or 1.
+ */
+data class FfiTaprootTweak (
+    var `outputKey`: kotlin.String,
+    var `parity`: kotlin.UByte
+) {
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiTaprootTweak: FfiConverterRustBuffer<FfiTaprootTweak> {
+    override fun read(buf: ByteBuffer): FfiTaprootTweak {
+        return FfiTaprootTweak(
+            FfiConverterString.read(buf),
+            FfiConverterUByte.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiTaprootTweak) = (
+            FfiConverterString.allocationSize(value.`outputKey`) +
+            FfiConverterUByte.allocationSize(value.`parity`)
+    )
+
+    override fun write(value: FfiTaprootTweak, buf: ByteBuffer) {
+            FfiConverterString.write(value.`outputKey`, buf)
+            FfiConverterUByte.write(value.`parity`, buf)
     }
 }
 
@@ -2239,7 +2900,12 @@ data class FfiWithdrawInfo (
     var `maxWithdrawable`: kotlin.ULong,
     var `minWithdrawable`: kotlin.ULong,
     var `defaultDescription`: kotlin.String?,
-    var `mintPubkey`: kotlin.String?
+    var `mintPubkey`: kotlin.String?,
+    /**
+     * `c`: the service's `cs1` for the queried note, as sent and
+     * unverified. Check it with [`check_note`].
+     */
+    var `signature`: kotlin.String?
 ) {
 
     companion object
@@ -2257,6 +2923,7 @@ public object FfiConverterTypeFfiWithdrawInfo: FfiConverterRustBuffer<FfiWithdra
             FfiConverterULong.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -2266,7 +2933,8 @@ public object FfiConverterTypeFfiWithdrawInfo: FfiConverterRustBuffer<FfiWithdra
             FfiConverterULong.allocationSize(value.`maxWithdrawable`) +
             FfiConverterULong.allocationSize(value.`minWithdrawable`) +
             FfiConverterOptionalString.allocationSize(value.`defaultDescription`) +
-            FfiConverterOptionalString.allocationSize(value.`mintPubkey`)
+            FfiConverterOptionalString.allocationSize(value.`mintPubkey`) +
+            FfiConverterOptionalString.allocationSize(value.`signature`)
     )
 
     override fun write(value: FfiWithdrawInfo, buf: ByteBuffer) {
@@ -2276,8 +2944,52 @@ public object FfiConverterTypeFfiWithdrawInfo: FfiConverterRustBuffer<FfiWithdra
             FfiConverterULong.write(value.`minWithdrawable`, buf)
             FfiConverterOptionalString.write(value.`defaultDescription`, buf)
             FfiConverterOptionalString.write(value.`mintPubkey`, buf)
+            FfiConverterOptionalString.write(value.`signature`, buf)
     }
 }
+
+
+
+/**
+ * Which message a certificate verified over.
+ */
+
+enum class FfiCertifiedOver {
+
+    /**
+     * `hex(Q)` at the note's domain, LUD-25's certificate for any note.
+     */
+    OUTPUT_KEY,
+    /**
+     * `hex(Q)` without a domain, as a mint signed before luds 92abbb3.
+     */
+    LEGACY_OUTPUT_KEY,
+    /**
+     * A bearer note's hash, as a mint signed before notes were keyed by `Q`.
+     */
+    LEGACY_HASH;
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiCertifiedOver: FfiConverterRustBuffer<FfiCertifiedOver> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiCertifiedOver.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiCertifiedOver) = 4UL
+
+    override fun write(value: FfiCertifiedOver, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
 
 
 
@@ -2311,6 +3023,223 @@ public object FfiConverterTypeFfiMutationKind: FfiConverterRustBuffer<FfiMutatio
 
     override fun write(value: FfiMutationKind, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Where a note sits below a SERVICE's root (LUD-26).
+ */
+sealed class FfiNotePath {
+
+    data class Wallet(
+        val `account`: kotlin.UInt,
+        val `index`: kotlin.UInt) : FfiNotePath() {
+        companion object
+    }
+
+    data class Change(
+        val `account`: kotlin.UInt,
+        val `index`: kotlin.UInt) : FfiNotePath() {
+        companion object
+    }
+
+    data class Share(
+        val `account`: kotlin.UInt,
+        val `share`: kotlin.UInt,
+        val `index`: kotlin.UInt) : FfiNotePath() {
+        companion object
+    }
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiNotePath : FfiConverterRustBuffer<FfiNotePath>{
+    override fun read(buf: ByteBuffer): FfiNotePath {
+        return when(buf.getInt()) {
+            1 -> FfiNotePath.Wallet(
+                FfiConverterUInt.read(buf),
+                FfiConverterUInt.read(buf),
+                )
+            2 -> FfiNotePath.Change(
+                FfiConverterUInt.read(buf),
+                FfiConverterUInt.read(buf),
+                )
+            3 -> FfiNotePath.Share(
+                FfiConverterUInt.read(buf),
+                FfiConverterUInt.read(buf),
+                FfiConverterUInt.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiNotePath) = when(value) {
+        is FfiNotePath.Wallet -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`account`)
+                + FfiConverterUInt.allocationSize(value.`index`)
+            )
+        }
+        is FfiNotePath.Change -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`account`)
+                + FfiConverterUInt.allocationSize(value.`index`)
+            )
+        }
+        is FfiNotePath.Share -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`account`)
+                + FfiConverterUInt.allocationSize(value.`share`)
+                + FfiConverterUInt.allocationSize(value.`index`)
+            )
+        }
+    }
+
+    override fun write(value: FfiNotePath, buf: ByteBuffer) {
+        when(value) {
+            is FfiNotePath.Wallet -> {
+                buf.putInt(1)
+                FfiConverterUInt.write(value.`account`, buf)
+                FfiConverterUInt.write(value.`index`, buf)
+                Unit
+            }
+            is FfiNotePath.Change -> {
+                buf.putInt(2)
+                FfiConverterUInt.write(value.`account`, buf)
+                FfiConverterUInt.write(value.`index`, buf)
+                Unit
+            }
+            is FfiNotePath.Share -> {
+                buf.putInt(3)
+                FfiConverterUInt.write(value.`account`, buf)
+                FfiConverterUInt.write(value.`share`, buf)
+                FfiConverterUInt.write(value.`index`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Whether a spend opens its note.
+ */
+sealed class FfiSpendVerdict {
+
+    /**
+     * Under LUD-25's current rules.
+     */
+    object Opens : FfiSpendVerdict()
+
+
+    /**
+     * Only under a deprecated `ck1` scheme a mint still accepts: rotate it.
+     */
+    object OpensLegacy : FfiSpendVerdict()
+
+
+    /**
+     * A script path whose script this library does not evaluate. The mint
+     * decides.
+     */
+    object Unevaluated : FfiSpendVerdict()
+
+
+    /**
+     * It does not open the note.
+     */
+    data class Fails(
+        val `reason`: kotlin.String) : FfiSpendVerdict() {
+        companion object
+    }
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSpendVerdict : FfiConverterRustBuffer<FfiSpendVerdict>{
+    override fun read(buf: ByteBuffer): FfiSpendVerdict {
+        return when(buf.getInt()) {
+            1 -> FfiSpendVerdict.Opens
+            2 -> FfiSpendVerdict.OpensLegacy
+            3 -> FfiSpendVerdict.Unevaluated
+            4 -> FfiSpendVerdict.Fails(
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiSpendVerdict) = when(value) {
+        is FfiSpendVerdict.Opens -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiSpendVerdict.OpensLegacy -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiSpendVerdict.Unevaluated -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiSpendVerdict.Fails -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`reason`)
+            )
+        }
+    }
+
+    override fun write(value: FfiSpendVerdict, buf: ByteBuffer) {
+        when(value) {
+            is FfiSpendVerdict.Opens -> {
+                buf.putInt(1)
+                Unit
+            }
+            is FfiSpendVerdict.OpensLegacy -> {
+                buf.putInt(2)
+                Unit
+            }
+            is FfiSpendVerdict.Unevaluated -> {
+                buf.putInt(3)
+                Unit
+            }
+            is FfiSpendVerdict.Fails -> {
+                buf.putInt(4)
+                FfiConverterString.write(value.`reason`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
@@ -2410,9 +3339,8 @@ sealed class LnurlcashException: kotlin.Exception() {
 
     /**
      * The mutation LANDED and the SERVICE returned no certificate for a
-     * `cp1` output, which LUD-25 Part 2 requires - or no signature over a
-     * hash output when the policy asked for one. A non-conforming SERVICE,
-     * but the note exists, and `new_secrets` is the only key to it. Persist
+     * `cp1` output - or none for a bearer output when the policy asked for
+     * one. The note exists, and `new_secrets` is the only key to it. Persist
      * them before deciding anything else. Empty when the caller named the
      * output: this library never saw what stands behind it.
      */
@@ -2576,6 +3504,38 @@ public object FfiConverterTypeLnurlcashError : FfiConverterRustBuffer<LnurlcashE
 /**
  * @suppress
  */
+public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
+    override fun read(buf: ByteBuffer): kotlin.UInt? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterUInt.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.UInt?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterUInt.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.UInt?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterUInt.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
     override fun read(buf: ByteBuffer): kotlin.ULong? {
         if (buf.get().toInt() == 0) {
@@ -2672,6 +3632,38 @@ public object FfiConverterOptionalTypeFfiCs1: FfiConverterRustBuffer<FfiCs1?> {
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeFfiCw1: FfiConverterRustBuffer<FfiCw1?> {
+    override fun read(buf: ByteBuffer): FfiCw1? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiCw1.read(buf)
+    }
+
+    override fun allocationSize(value: FfiCw1?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiCw1.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiCw1?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiCw1.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeFfiCx1: FfiConverterRustBuffer<FfiCx1?> {
     override fun read(buf: ByteBuffer): FfiCx1? {
         if (buf.get().toInt() == 0) {
@@ -2726,6 +3718,134 @@ public object FfiConverterOptionalTypeFfiMintFee: FfiConverterRustBuffer<FfiMint
         } else {
             buf.put(1)
             FfiConverterTypeFfiMintFee.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiNoteCheck: FfiConverterRustBuffer<FfiNoteCheck?> {
+    override fun read(buf: ByteBuffer): FfiNoteCheck? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiNoteCheck.read(buf)
+    }
+
+    override fun allocationSize(value: FfiNoteCheck?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiNoteCheck.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiNoteCheck?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiNoteCheck.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiNoteOwner: FfiConverterRustBuffer<FfiNoteOwner?> {
+    override fun read(buf: ByteBuffer): FfiNoteOwner? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiNoteOwner.read(buf)
+    }
+
+    override fun allocationSize(value: FfiNoteOwner?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiNoteOwner.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiNoteOwner?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiNoteOwner.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiSpendCheck: FfiConverterRustBuffer<FfiSpendCheck?> {
+    override fun read(buf: ByteBuffer): FfiSpendCheck? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiSpendCheck.read(buf)
+    }
+
+    override fun allocationSize(value: FfiSpendCheck?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiSpendCheck.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiSpendCheck?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiSpendCheck.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiCertifiedOver: FfiConverterRustBuffer<FfiCertifiedOver?> {
+    override fun read(buf: ByteBuffer): FfiCertifiedOver? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiCertifiedOver.read(buf)
+    }
+
+    override fun allocationSize(value: FfiCertifiedOver?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiCertifiedOver.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiCertifiedOver?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiCertifiedOver.write(value, buf)
         }
     }
 }
@@ -2841,9 +3961,36 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * The informational GET for a note named by its hash rather than its secret,
-         * so nothing spendable goes on the wire. What a restore walk uses. `h` may be
-         * a Part 2 `cp1`, sent as `p`.
+         * A bearer note's full `cw1` for this preimage: the spend its 64-hex short
+         * form stands for. Bearer material.
+         */
+    @Throws(LnurlcashException::class) fun `bearerCw1`(`preimageHex`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_bearer_cw1(
+        FfiConverterString.lower(`preimageHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The bearer note a 32-byte hash `h` names.
+         */
+    @Throws(LnurlcashException::class) fun `bearerNote`(`hHex`: kotlin.String): FfiBearerNote {
+            return FfiConverterTypeFfiBearerNote.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_bearer_note(
+        FfiConverterString.lower(`hHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The informational GET for a note named by `?p=` rather than its spend, so
+         * nothing spendable goes on the wire. What a restore walk uses. `h` is a
+         * `cp1` or a bearer note's 64-hex hash.
          */ fun `buildNoteInfoUrlByHash`(`withdrawLink`: kotlin.String, `h`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
     uniffiRustCall() { _status ->
@@ -2877,11 +4024,95 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     }
 
 
-    @Throws(LnurlcashException::class) fun `cashNodeToCx1`(`nodeHex`: kotlin.String): FfiCx1 {
-            return FfiConverterTypeFfiCx1.lift(
+        /**
+         * A share node's `cx1`.
+         */
+    @Throws(LnurlcashException::class) fun `cashNodeToCx1`(`nodeHex`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_cash_node_to_cx1(
         FfiConverterString.lower(`nodeHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * Why a mint refuses this leaf (an unknown leaf version, or an `OP_SUCCESS`
+         * opcode outside pushed data), or null if it does not.
+         */
+    @Throws(LnurlcashException::class) fun `checkLeaf`(`leafVersion`: kotlin.UByte, `scriptHex`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_check_leaf(
+        FfiConverterUByte.lower(`leafVersion`),FfiConverterString.lower(`scriptHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The same check, reporting which certificate message verified and what the
+         * spend did. Null when `k1` is no spend or the certificate does not verify.
+         */ fun `checkNote`(`k1`: kotlin.String, `domain`: kotlin.String, `amountMsat`: kotlin.ULong, `signature`: kotlin.String, `mintPubkeyHex`: kotlin.String): FfiNoteCheck? {
+            return FfiConverterOptionalTypeFfiNoteCheck.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_check_note(
+        FfiConverterString.lower(`k1`),FfiConverterString.lower(`domain`),FfiConverterULong.lower(`amountMsat`),FfiConverterString.lower(`signature`),FfiConverterString.lower(`mintPubkeyHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * A certificate for a note named without its spend, at `domain`: a `cp1`,
+         * or a bearer note's 64-hex hash. Falls back to the superseded messages,
+         * reported as legacy. Null if none verifies.
+         */ fun `checkNoteCertificate`(`reference`: kotlin.String, `domain`: kotlin.String, `amountMsat`: kotlin.ULong, `signature`: kotlin.String, `mintPubkeyHex`: kotlin.String): FfiCertifiedOver? {
+            return FfiConverterOptionalTypeFfiCertifiedOver.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_check_note_certificate(
+        FfiConverterString.lower(`reference`),FfiConverterString.lower(`domain`),FfiConverterULong.lower(`amountMsat`),FfiConverterString.lower(`signature`),FfiConverterString.lower(`mintPubkeyHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * [`check_note`] from a certified note URL, `...?k1=<spend>&c=<cs1>`, with
+         * the domain, spend, certificate and declared amount all read off it.
+         */ fun `checkNoteUrl`(`url`: kotlin.String, `mintPubkeyHex`: kotlin.String): FfiNoteCheck? {
+            return FfiConverterOptionalTypeFfiNoteCheck.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_check_note_url(
+        FfiConverterString.lower(`url`),FfiConverterString.lower(`mintPubkeyHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * Does the spend in `k1` open its note at `domain`, as the mint would
+         * judge it? Null if `k1` is no spend. Time claims are the mint's to judge.
+         */ fun `checkSpend`(`k1`: kotlin.String, `domain`: kotlin.String): FfiSpendCheck? {
+            return FfiConverterOptionalTypeFfiSpendCheck.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_check_spend(
+        FfiConverterString.lower(`k1`),FfiConverterString.lower(`domain`),_status)
+}
+    )
+    }
+
+
+        /**
+         * Whether a script path's time claim is due by a mint's clock, in Unix
+         * seconds: null if it is, or why not. `locked_at` is when the mint credited
+         * the note.
+         */ fun `checkTimeClaim`(`locktime`: kotlin.UInt, `sequence`: kotlin.UInt, `now`: kotlin.ULong, `lockedAt`: kotlin.ULong): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_check_time_claim(
+        FfiConverterUInt.lower(`locktime`),FfiConverterUInt.lower(`sequence`),FfiConverterULong.lower(`now`),FfiConverterULong.lower(`lockedAt`),_status)
 }
     )
     }
@@ -2913,7 +4144,10 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     )
     }
 
- fun `decodeCp1`(`value`: kotlin.String): kotlin.String? {
+
+        /**
+         * Null for a `cp1` whose key is not a curve point: no spend opens it.
+         */ fun `decodeCp1`(`value`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_decode_cp1(
@@ -2940,7 +4174,23 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     )
     }
 
- fun `decodeCx1`(`value`: kotlin.String): FfiCx1? {
+
+        /**
+         * Null unless the payload parses exactly and its control block commits to
+         * a key.
+         */ fun `decodeCw1`(`value`: kotlin.String): FfiCw1? {
+            return FfiConverterOptionalTypeFfiCw1.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_decode_cw1(
+        FfiConverterString.lower(`value`),_status)
+}
+    )
+    }
+
+
+        /**
+         * Null for anything but a 65-byte `chainCode || P`, P a curve point.
+         */ fun `decodeCx1`(`value`: kotlin.String): FfiCx1? {
             return FfiConverterOptionalTypeFfiCx1.lift(
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_decode_cx1(
@@ -2951,15 +4201,13 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * `m/139'/d1/d2/d3/d4` for one mint, as a 64-byte hex node: the domain node
-         * this section's Seed & derivation formula specifies. Bearer material - hand
-         * out its `cx1`.
-         */
-    @Throws(LnurlcashException::class) fun `deriveCashAddressNode`(`rootHex`: kotlin.String, `host`: kotlin.String): kotlin.String {
-            return FfiConverterString.lift(
-    uniffiRustCallWithError(LnurlcashException) { _status ->
-    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_cash_address_node(
-        FfiConverterString.lower(`rootHex`),FfiConverterString.lower(`host`),_status)
+         * `hex(Q)` of what goes where a `cp1` goes: a `cp1` whose key is a point, or
+         * a bearer note's 64-hex hash.
+         */ fun `decodeNote`(`value`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_decode_note(
+        FfiConverterString.lower(`value`),_status)
 }
     )
     }
@@ -2979,13 +4227,10 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * `m/139'/d1/d2/d3/d4` for one mint, as a 64-byte hex node.
-         *
-         * Every unhardened level in LUD-25's path is at or above this node, so a
-         * hardware signer given THIS rather than the seed needs no elliptic curve:
-         * each index beneath it is one hardened step. Whoever derives it can derive
-         * every note secret held at that mint, so it is provisioning material - one
-         * mint's subtree, not the wallet.
+         * `m/139'/d1/d2/d3/d4` over `host` exactly as given, port included, as a
+         * 64-byte hex node. LUD-26's root is [`derive_service_root`], which drops
+         * the port first; for a host without one they are the same node. Bearer
+         * material for one mint's subtree, not the wallet.
          */
     @Throws(LnurlcashException::class) fun `deriveCashDomainNode`(`rootHex`: kotlin.String, `host`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
@@ -3026,21 +4271,7 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * Not LUD-25: one mint's address branch for a Nostr identity key, as a
-         * 64-byte hex node. Bearer material - hand out its `cx1`.
-         */
-    @Throws(LnurlcashException::class) fun `deriveNostrAddressNode`(`secretKeyHex`: kotlin.String, `host`: kotlin.String): kotlin.String {
-            return FfiConverterString.lift(
-    uniffiRustCallWithError(LnurlcashException) { _status ->
-    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_nostr_address_node(
-        FfiConverterString.lower(`secretKeyHex`),FfiConverterString.lower(`host`),_status)
-}
-    )
-    }
-
-
-        /**
-         * Not LUD-25: the cash seed of a Nostr identity key. Bearer material.
+         * Not LUD-26: the cash seed of a Nostr identity key. Bearer material.
          */
     @Throws(LnurlcashException::class) fun `deriveNostrCashSeed`(`secretKeyHex`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
@@ -3053,15 +4284,41 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * A note's public key at `index`, from the watch-only half of a branch.
-         * `index` is any u32 and never hardened. An unusable index is an error:
-         * use the next one.
+         * Not LUD-26: one mint's root `S` for a Nostr identity key, as a 64-byte
+         * hex node. Bearer material.
          */
-    @Throws(LnurlcashException::class) fun `deriveNotePubkey`(`branchPubkeyXOnlyHex`: kotlin.String, `chainCodeHex`: kotlin.String, `index`: kotlin.UInt): kotlin.String {
+    @Throws(LnurlcashException::class) fun `deriveNostrServiceRoot`(`secretKeyHex`: kotlin.String, `domain`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_nostr_service_root(
+        FfiConverterString.lower(`secretKeyHex`),FfiConverterString.lower(`domain`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The note at `path` below a SERVICE root.
+         */
+    @Throws(LnurlcashException::class) fun `deriveNoteKey`(`serviceRootHex`: kotlin.String, `path`: FfiNotePath): FfiNoteKey {
+            return FfiConverterTypeFfiNoteKey.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_note_key(
+        FfiConverterString.lower(`serviceRootHex`),FfiConverterTypeFfiNotePath.lower(`path`),_status)
+}
+    )
+    }
+
+
+        /**
+         * `Q` of note `index` on the share a `cx1` exports, by CKDpub: what a
+         * SERVICE credits next. An unusable index is an error: use the next one.
+         */
+    @Throws(LnurlcashException::class) fun `deriveNotePubkey`(`cx1`: kotlin.String, `index`: kotlin.UInt): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_note_pubkey(
-        FfiConverterString.lower(`branchPubkeyXOnlyHex`),FfiConverterString.lower(`chainCodeHex`),FfiConverterUInt.lower(`index`),_status)
+        FfiConverterString.lower(`cx1`),FfiConverterUInt.lower(`index`),_status)
 }
     )
     }
@@ -3095,13 +4352,29 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * The secret key behind [`derive_note_pubkey`]. Bearer material.
+         * `S = m/139'/d1/d2/d3/d4` for one mint, from the wallet's `m/139'` root,
+         * as a 64-byte hex node. `domain` may be any URL or host; its port is
+         * dropped. Bearer material for every note the wallet holds there.
          */
-    @Throws(LnurlcashException::class) fun `deriveNoteSecretKey`(`branchPrivateKeyHex`: kotlin.String, `chainCodeHex`: kotlin.String, `index`: kotlin.UInt): kotlin.String {
+    @Throws(LnurlcashException::class) fun `deriveServiceRoot`(`rootHex`: kotlin.String, `domain`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
-    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_note_secret_key(
-        FfiConverterString.lower(`branchPrivateKeyHex`),FfiConverterString.lower(`chainCodeHex`),FfiConverterUInt.lower(`index`),_status)
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_service_root(
+        FfiConverterString.lower(`rootHex`),FfiConverterString.lower(`domain`),_status)
+}
+    )
+    }
+
+
+        /**
+         * `S/account'/2/share'` as a 64-byte hex node. Bearer material: hand out
+         * its [`cash_node_to_cx1`], and sign its registration with its key.
+         */
+    @Throws(LnurlcashException::class) fun `deriveShareNode`(`serviceRootHex`: kotlin.String, `account`: kotlin.UInt, `share`: kotlin.UInt): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_derive_share_node(
+        FfiConverterString.lower(`serviceRootHex`),FfiConverterUInt.lower(`account`),FfiConverterUInt.lower(`share`),_status)
 }
     )
     }
@@ -3117,7 +4390,7 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * A 96-byte pubkey-plus-Schnorr-signature payload as a `ck1`.
+         * A 96-byte `Q || sig` key-path spend as a `ck1`.
          */
     @Throws(LnurlcashException::class) fun `encodeCk1`(`signatureHex`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
@@ -3130,7 +4403,7 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * A note's 32-byte x-only public key as a `cp1`.
+         * A note's 32-byte output key `Q` as a `cp1`.
          */
     @Throws(LnurlcashException::class) fun `encodeCp1`(`pubkeyXOnlyHex`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
@@ -3169,11 +4442,21 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     }
 
 
-    @Throws(LnurlcashException::class) fun `encodeCx1`(`pubkeyXOnlyHex`: kotlin.String, `chainCodeHex`: kotlin.String): kotlin.String {
+    @Throws(LnurlcashException::class) fun `encodeCw1`(`cw1`: FfiCw1): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_encode_cw1(
+        FfiConverterTypeFfiCw1.lower(`cw1`),_status)
+}
+    )
+    }
+
+
+    @Throws(LnurlcashException::class) fun `encodeCx1`(`chainCodeHex`: kotlin.String, `pubkeyHex`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_encode_cx1(
-        FfiConverterString.lower(`pubkeyXOnlyHex`),FfiConverterString.lower(`chainCodeHex`),_status)
+        FfiConverterString.lower(`chainCodeHex`),FfiConverterString.lower(`pubkeyHex`),_status)
 }
     )
     }
@@ -3202,13 +4485,30 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * A note's id: sha256 of the secret, which is the `h` disclosed on a mutation.
+         * A bearer note's hash `h = sha256(preimage)`: its `cp1` short form, what a
+         * mutation discloses as `p1`/`p2`. Not the note's id, which is `hex(Q)`
+         * (see [`note_id_of`]).
          */
     @Throws(LnurlcashException::class) fun `hashK1`(`k1`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_hash_k1(
         FfiConverterString.lower(`k1`),_status)
+}
+    )
+    }
+
+
+        /**
+         * LUD-26's internal transfer: send a whole note to a Lightning Address at
+         * the note's own mint. `pay_request_body` is the address's payRequest JSON;
+         * refused unless its `withdrawLink` is on `note_domain`.
+         */
+    @Throws(LnurlcashException::class) fun `internalTransferRequest`(`payRequestBody`: kotlin.String, `noteDomain`: kotlin.String, `k1`: kotlin.String, `amountMsat`: kotlin.ULong): FfiRequest {
+            return FfiConverterTypeFfiRequest.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_internal_transfer_request(
+        FfiConverterString.lower(`payRequestBody`),FfiConverterString.lower(`noteDomain`),FfiConverterString.lower(`k1`),FfiConverterULong.lower(`amountMsat`),_status)
 }
     )
     }
@@ -3289,6 +4589,15 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     )
     }
 
+ fun `isCw1`(`value`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_is_cw1(
+        FfiConverterString.lower(`value`),_status)
+}
+    )
+    }
+
  fun `isCx1`(`value`: kotlin.String): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
@@ -3303,6 +4612,85 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_is_preimage(
         FfiConverterString.lower(`value`),_status)
+}
+    )
+    }
+
+ fun `isXOnlyPoint`(`valueHex`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_is_x_only_point(
+        FfiConverterString.lower(`valueHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * What a `ck1`'s signature signs: the key-path sighash for `Q` at the exact
+         * `domain` string given (lowercased), as hex.
+         */
+    @Throws(LnurlcashException::class) fun `keyPathSighash`(`outputKeyHex`: kotlin.String, `domain`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_key_path_sighash(
+        FfiConverterString.lower(`outputKeyHex`),FfiConverterString.lower(`domain`),_status)
+}
+    )
+    }
+
+
+        /**
+         * Superseded: the node the per-note tweak hung off, `m/139'/d1..d4` over the
+         * host as stored, port included. Bearer material, for sweeping only.
+         */
+    @Throws(LnurlcashException::class) fun `legacyBranchNode`(`rootHex`: kotlin.String, `host`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_legacy_branch_node(
+        FfiConverterString.lower(`rootHex`),FfiConverterString.lower(`host`),_status)
+}
+    )
+    }
+
+
+        /**
+         * Superseded: a [`legacy_branch_node`]'s 64-byte `cx1`.
+         */
+    @Throws(LnurlcashException::class) fun `legacyCx1Of`(`nodeHex`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_legacy_cx1_of(
+        FfiConverterString.lower(`nodeHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * Superseded: `Q` under the per-note tweak before LUD-26, from a 64-byte
+         * legacy `cx1`, for finding notes to sweep. `purpose` null is the scheme
+         * before purposes existed.
+         */
+    @Throws(LnurlcashException::class) fun `legacyDeriveNotePubkey`(`legacyCx1`: kotlin.String, `purpose`: kotlin.UInt?, `index`: kotlin.UInt): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_legacy_derive_note_pubkey(
+        FfiConverterString.lower(`legacyCx1`),FfiConverterOptionalUInt.lower(`purpose`),FfiConverterUInt.lower(`index`),_status)
+}
+    )
+    }
+
+
+        /**
+         * Superseded: the secret key behind [`legacy_derive_note_pubkey`], from a
+         * [`legacy_branch_node`]. Bearer material.
+         */
+    @Throws(LnurlcashException::class) fun `legacyDeriveNoteSecretKey`(`nodeHex`: kotlin.String, `purpose`: kotlin.UInt?, `index`: kotlin.UInt): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_legacy_derive_note_secret_key(
+        FfiConverterString.lower(`nodeHex`),FfiConverterOptionalUInt.lower(`purpose`),FfiConverterUInt.lower(`index`),_status)
 }
     )
     }
@@ -3375,8 +4763,8 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * Ask for a mint invoice, naming the note it will credit with
-         * `h = sha256(secret)`, or with a Part 2 `cp1`, sent as the comment alone.
+         * Ask for a mint invoice, naming the note it will credit by a bearer note's
+         * hash `h = sha256(preimage)`, or by a `cp1`, sent as the comment alone.
          */
     @Throws(LnurlcashException::class) fun `mintInvoiceRequestWithHash`(`payCallback`: kotlin.String, `amountMsat`: kotlin.ULong, `h`: kotlin.String): FfiRequest {
             return FfiConverterTypeFfiRequest.lift(
@@ -3398,8 +4786,9 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * The id a SERVICE files a note under: sha256(k1) for a secret, the
-         * verified embedded key for a `ck1`. Compare notes by this, never by k1.
+         * The id a SERVICE files a note under, `hex(Q)`, for any spend: a 64-hex
+         * preimage, a `ck1` or a `cw1`. Names the note without saying the spend
+         * opens it (see [`check_spend`]). Compare notes by this, never by k1.
          */ fun `noteIdOf`(`k1`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
     uniffiRustCall() { _status ->
@@ -3430,8 +4819,9 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * What to look a note up by without disclosing it: the hash, or the `cp1`
-         * for a `ck1`. Pass it to [`build_note_info_url_by_hash`].
+         * What to look a note up by without disclosing it: a bearer note's hash for
+         * a preimage, the `cp1` for any other spend. Pass it to
+         * [`build_note_info_url_by_hash`].
          */ fun `noteLookupOf`(`k1`: kotlin.String): kotlin.String? {
             return FfiConverterOptionalString.lift(
     uniffiRustCall() { _status ->
@@ -3449,6 +4839,45 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 }
     )
     }
+
+
+        /**
+         * The message a SERVICE certifies for `hex(Q)` at `domain`. Null for a
+         * domain that names none.
+         */ fun `noteSignatureMessageForHash`(`id`: kotlin.String, `domain`: kotlin.String, `amountMsat`: kotlin.ULong): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_note_signature_message_for_hash(
+        FfiConverterString.lower(`id`),FfiConverterString.lower(`domain`),FfiConverterULong.lower(`amountMsat`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The `Q` a leaf and its control block commit to. Null for a control block
+         * that commits to none.
+         */ fun `outputKeyOf`(`scriptHex`: kotlin.String, `controlBlockHex`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_output_key_of(
+        FfiConverterString.lower(`scriptHex`),FfiConverterString.lower(`controlBlockHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The answer to an [`internal_transfer_request`]. An ambiguous error means
+         * the note may already be spent.
+         */
+    @Throws(LnurlcashException::class) fun `parseInternalTransfer`(`body`: kotlin.String)
+        =
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_parse_internal_transfer(
+        FfiConverterString.lower(`body`),_status)
+}
+
 
 
     @Throws(LnurlcashException::class) fun `parseInvoice`(`body`: kotlin.String, `requestedMsat`: kotlin.ULong): FfiInvoice {
@@ -3489,10 +4918,10 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
          *
          * Pass the request's `outputs` too. A `cp1` output that comes back without
          * its certificate is [`LnurlcashError::Unverifiable`] whatever the policy
-         * says; a plain hash output comes back with its signature null, unless
-         * `policy.require_signatures` asks for one. An output missing from
-         * `outputs` is read as a hash, so leaving them out quietly drops the `cp1`
-         * check.
+         * says; a bearer output named by its hash may come back with its signature
+         * null, unless `policy.require_signatures` asks for one. An output missing
+         * from `outputs` is read as a hash, so leaving them out quietly drops the
+         * `cp1` check.
          */
     @Throws(LnurlcashException::class) fun `parseMutation`(`body`: kotlin.String, `newSecrets`: List<kotlin.String>, `kind`: FfiMutationKind, `outputs`: List<kotlin.String>, `policy`: FfiPolicy): FfiMutation {
             return FfiConverterTypeFfiMutation.lift(
@@ -3506,15 +4935,27 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
         /**
          * Only `policy.require_mint_pubkey` matters here. Leave it on unless the
-         * service is a Part 1-only mint that publishes no `mintPubkey`, because a
-         * note with no key to check it against is one whoever receives it must take
-         * on faith.
+         * service publishes no `mintPubkey`, because a note with no key to check it
+         * against is one whoever receives it must take on faith.
          */
     @Throws(LnurlcashException::class) fun `parseNoteInfo`(`body`: kotlin.String, `queriedUrl`: kotlin.String, `policy`: FfiPolicy): FfiWithdrawInfo {
             return FfiConverterTypeFfiWithdrawInfo.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_parse_note_info(
         FfiConverterString.lower(`body`),FfiConverterString.lower(`queriedUrl`),FfiConverterTypeFfiPolicy.lower(`policy`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The answer to a `?p=` lookup from [`build_note_info_url_by_hash`].
+         */
+    @Throws(LnurlcashException::class) fun `parseNoteInfoByHash`(`body`: kotlin.String, `policy`: FfiPolicy): FfiNoteInfoByHash {
+            return FfiConverterTypeFfiNoteInfoByHash.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_parse_note_info_by_hash(
+        FfiConverterString.lower(`body`),FfiConverterTypeFfiPolicy.lower(`policy`),_status)
 }
     )
     }
@@ -3549,11 +4990,15 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     )
     }
 
- fun `recoverNoteOwnershipPubkey`(`signatureHex`: kotlin.String): kotlin.String? {
-            return FfiConverterOptionalString.lift(
+
+        /**
+         * Verify a raw `ck1` payload (96 or 65 bytes of hex) against the mint at
+         * `domain`. Null for an invalid proof, or one signed for another mint.
+         */ fun `recoverNoteOwnershipPubkey`(`signatureHex`: kotlin.String, `domain`: kotlin.String): FfiNoteOwner? {
+            return FfiConverterOptionalTypeFfiNoteOwner.lift(
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_recover_note_ownership_pubkey(
-        FfiConverterString.lower(`signatureHex`),_status)
+        FfiConverterString.lower(`signatureHex`),FfiConverterString.lower(`domain`),_status)
 }
     )
     }
@@ -3601,9 +5046,10 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * Rotate into an output the caller already holds: a hash, or a Part 2 `cp1`
-         * (sent as `p1`). The request carries no secrets, because this crate never
-         * saw one - persist whatever stands behind `h` BEFORE the GET.
+         * Rotate into an output the caller already holds: a `cp1`, or a bearer
+         * note's hash, sent as `p1`. The request carries no secrets, because this
+         * crate never saw one - persist whatever stands behind `h` BEFORE the GET.
+         * Refused before sending unless `h` names a note.
          */
     @Throws(LnurlcashException::class) fun `rotateRequestWithHash`(`callback`: kotlin.String, `k1`: kotlin.String, `h`: kotlin.String): FfiRequest {
             return FfiConverterTypeFfiRequest.lift(
@@ -3625,28 +5071,57 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * A register/update or unregister proof by the branch's index-0 key, as raw
-         * 64-byte BIP-340 Schnorr signature hex.
+         * What a `SIGHASH_DEFAULT` signature in a `cw1`'s leaf signs, at the exact
+         * `domain` string given (lowercased), for the time the spend claims.
          */
-    @Throws(LnurlcashException::class) fun `signAddressProof`(`indexZeroSecretKeyHex`: kotlin.String, `action`: kotlin.String, `username`: kotlin.String): kotlin.String {
+    @Throws(LnurlcashException::class) fun `scriptPathSighash`(`outputKeyHex`: kotlin.String, `domain`: kotlin.String, `leafScriptHex`: kotlin.String, `locktime`: kotlin.UInt, `sequence`: kotlin.UInt): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
-    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_sign_address_proof(
-        FfiConverterString.lower(`indexZeroSecretKeyHex`),FfiConverterString.lower(`action`),FfiConverterString.lower(`username`),_status)
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_script_path_sighash(
+        FfiConverterString.lower(`outputKeyHex`),FfiConverterString.lower(`domain`),FfiConverterString.lower(`leafScriptHex`),FfiConverterUInt.lower(`locktime`),FfiConverterUInt.lower(`sequence`),_status)
 }
     )
     }
 
 
         /**
-         * The raw 96-byte pubkey-plus-Schnorr-signature payload, as hex. [`encode_ck1`] it for the
-         * wire; either way, it spends the note.
+         * A register, update or unregister proof by a share's own key, bound to the
+         * service's `domain`, the lowercased username and, for register and update,
+         * the `cx1` put on file, as raw 64-byte BIP-340 signature hex.
          */
-    @Throws(LnurlcashException::class) fun `signNoteOwnership`(`secretKeyHex`: kotlin.String): kotlin.String {
+    @Throws(LnurlcashException::class) fun `signAddressProof`(`shareSecretKeyHex`: kotlin.String, `action`: kotlin.String, `domain`: kotlin.String, `username`: kotlin.String, `cx1`: kotlin.String?): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_sign_address_proof(
+        FfiConverterString.lower(`shareSecretKeyHex`),FfiConverterString.lower(`action`),FfiConverterString.lower(`domain`),FfiConverterString.lower(`username`),FfiConverterOptionalString.lower(`cx1`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The raw 96-byte `Q || sig` key-path spend of the note `x(sk·G)` at
+         * `domain` (a note URL, a mint URL or a bare host), as hex. [`encode_ck1`]
+         * it for the wire; either way, it spends the note, at that mint only.
+         */
+    @Throws(LnurlcashException::class) fun `signNoteOwnership`(`secretKeyHex`: kotlin.String, `domain`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(LnurlcashException) { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_sign_note_ownership(
-        FfiConverterString.lower(`secretKeyHex`),_status)
+        FfiConverterString.lower(`secretKeyHex`),FfiConverterString.lower(`domain`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The domain a spend at `value` (a note or mint URL, or a bare host) is
+         * bound to: its lowercase hostname, never the scheme or port.
+         */ fun `spendDomainOf`(`value`: kotlin.String): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_spend_domain_of(
+        FfiConverterString.lower(`value`),_status)
 }
     )
     }
@@ -3663,8 +5138,8 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 
 
         /**
-         * As [`rotate_request_with_hash`], for a split: `h` and `h2` each go as a
-         * hash (`h`/`h2`) or a `cp1` (`p1`/`p2`).
+         * As [`rotate_request_with_hash`], for a split: `h` goes as `p1` and `h2`
+         * as `p2`, each a `cp1` or a bearer note's hash.
          */
     @Throws(LnurlcashException::class) fun `splitRequestWithHash`(`callback`: kotlin.String, `k1s`: List<kotlin.String>, `amountMsat`: kotlin.ULong, `h`: kotlin.String, `h2`: kotlin.String): FfiRequest {
             return FfiConverterTypeFfiRequest.lift(
@@ -3676,29 +5151,93 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
     }
 
 
-        /**
-         * Verify a note's signature against the mint's pubkey, offline. Accepts the
-         * recovery id at either end, because implementations disagree about which.
-         *
-         * `k1` may be a Part 2 `ck1`, and `signature_hex` a Part 2 `cs1`.
-         */ fun `verifyNoteSignature`(`k1`: kotlin.String, `amountMsat`: kotlin.ULong, `signatureHex`: kotlin.String, `mintPubkeyHex`: kotlin.String): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    uniffiRustCall() { _status ->
-    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_verify_note_signature(
-        FfiConverterString.lower(`k1`),FfiConverterULong.lower(`amountMsat`),FfiConverterString.lower(`signatureHex`),FfiConverterString.lower(`mintPubkeyHex`),_status)
+    @Throws(LnurlcashException::class) fun `tapbranchHash`(`aHex`: kotlin.String, `bHex`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_tapbranch_hash(
+        FfiConverterString.lower(`aHex`),FfiConverterString.lower(`bHex`),_status)
+}
+    )
+    }
+
+
+    @Throws(LnurlcashException::class) fun `tapleafHash`(`scriptHex`: kotlin.String, `leafVersion`: kotlin.UByte): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_tapleaf_hash(
+        FfiConverterString.lower(`scriptHex`),FfiConverterUByte.lower(`leafVersion`),_status)
 }
     )
     }
 
 
         /**
-         * The same check by the note's id - a hash, or a Part 2 note's public key as
-         * hex - for a caller that holds the id but not the k1 that spends it.
-         */ fun `verifyNoteSignatureHash`(`h`: kotlin.String, `amountMsat`: kotlin.ULong, `signatureHex`: kotlin.String, `mintPubkeyHex`: kotlin.String): kotlin.Boolean {
+         * `Q` for an internal key and a script tree's merkle root.
+         */
+    @Throws(LnurlcashException::class) fun `taprootTweak`(`internalKeyHex`: kotlin.String, `merkleRootHex`: kotlin.String): FfiTaprootTweak {
+            return FfiConverterTypeFfiTaprootTweak.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_taproot_tweak(
+        FfiConverterString.lower(`internalKeyHex`),FfiConverterString.lower(`merkleRootHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The secret key that signs for [`taproot_tweak`]'s `Q`. Bearer material.
+         */
+    @Throws(LnurlcashException::class) fun `taprootTweakSecretKey`(`secretKeyHex`: kotlin.String, `merkleRootHex`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(LnurlcashException) { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_taproot_tweak_secret_key(
+        FfiConverterString.lower(`secretKeyHex`),FfiConverterString.lower(`merkleRootHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * What a SERVICE checks: a proof by `signer_cx1`'s key over this action's
+         * message.
+         */ fun `verifyAddressProof`(`signerCx1`: kotlin.String, `signatureHex`: kotlin.String, `action`: kotlin.String, `domain`: kotlin.String, `username`: kotlin.String, `cx1`: kotlin.String?): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_verify_address_proof(
+        FfiConverterString.lower(`signerCx1`),FfiConverterString.lower(`signatureHex`),FfiConverterString.lower(`action`),FfiConverterString.lower(`domain`),FfiConverterString.lower(`username`),FfiConverterOptionalString.lower(`cx1`),_status)
+}
+    )
+    }
+
+
+        /**
+         * LUD-25's offline verification as a yes or no: the certificate covers the
+         * note `k1` spends at `domain` (the note URL, or its host) and
+         * `amount_msat`, recovering to `mint_pubkey_hex`, and the spend opens the
+         * note there. A certificate over a superseded message still counts; see
+         * [`check_note`] for which one it was.
+         *
+         * `k1` is a 64-hex preimage, a `ck1` or a `cw1`; `signature` a `cs1` or 65
+         * bytes of hex.
+         */ fun `verifyNoteSignature`(`k1`: kotlin.String, `domain`: kotlin.String, `amountMsat`: kotlin.ULong, `signature`: kotlin.String, `mintPubkeyHex`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_verify_note_signature(
+        FfiConverterString.lower(`k1`),FfiConverterString.lower(`domain`),FfiConverterULong.lower(`amountMsat`),FfiConverterString.lower(`signature`),FfiConverterString.lower(`mintPubkeyHex`),_status)
+}
+    )
+    }
+
+
+        /**
+         * The raw current certificate check over exactly the 64-hex `hex(Q)` given,
+         * at `domain`. Prefer [`check_note`] or [`check_note_certificate`], which
+         * work the id out themselves.
+         */ fun `verifyNoteSignatureHash`(`id`: kotlin.String, `domain`: kotlin.String, `amountMsat`: kotlin.ULong, `signature`: kotlin.String, `mintPubkeyHex`: kotlin.String): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_lnurlcash_core_fn_func_verify_note_signature_hash(
-        FfiConverterString.lower(`h`),FfiConverterULong.lower(`amountMsat`),FfiConverterString.lower(`signatureHex`),FfiConverterString.lower(`mintPubkeyHex`),_status)
+        FfiConverterString.lower(`id`),FfiConverterString.lower(`domain`),FfiConverterULong.lower(`amountMsat`),FfiConverterString.lower(`signature`),FfiConverterString.lower(`mintPubkeyHex`),_status)
 }
     )
     }

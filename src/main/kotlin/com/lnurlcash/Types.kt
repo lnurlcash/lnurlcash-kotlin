@@ -90,15 +90,68 @@ public data class HashedSplitNotes(
 )
 
 /**
- * A watch-only Part 2 branch: its x-only public key and chain code, both hex.
+ * A share's `cx1` as its two halves, both hex: the 32-byte chain code and the
+ * 33-byte compressed public key (BIP-32's order).
  *
- * Spends nothing, but whoever holds it can derive every note key on the branch
+ * Spends nothing, but whoever holds it can derive every note key on the share
  * with [deriveNotePubkey] and ask a mint about each one. [encodeCx1] turns it
  * into the `cx1` string a mint is handed.
  */
 public data class Cx1(
-    public val pubkeyXOnly: String,
     public val chainCode: String,
+    public val pubkey: String,
+) {
+    /** The key without its parity byte: what a registration proof verifies against. */
+    public val pubkeyXOnly: String get() = pubkey.substring(2)
+}
+
+/**
+ * Where a note sits below a mint's service root (LUD-26). Accounts and shares
+ * are hardened levels and a note index must be below 2^31, so every number
+ * here is in `0..2147483647` and the types are plain `Int`: no `UInt`, which
+ * Java cannot use.
+ */
+public sealed class NotePath {
+    /** `S/account'/0/index`: a note the wallet received. */
+    public data class Wallet(public val account: Int, public val index: Int) : NotePath() {
+        init { checkLevels(account, index) }
+    }
+
+    /** `S/account'/1/index`: a note the wallet minted to itself as change. */
+    public data class Change(public val account: Int, public val index: Int) : NotePath() {
+        init { checkLevels(account, index) }
+    }
+
+    /** `S/account'/2/share'/index`: a note on one exported share. */
+    public data class Share(public val account: Int, public val share: Int, public val index: Int) : NotePath() {
+        init { checkLevels(account, share, index) }
+    }
+}
+
+private fun checkLevels(vararg levels: Int) {
+    require(levels.all { it >= 0 }) { "a note path level must be in 0..2147483647" }
+}
+
+/**
+ * A note's keys, as hex. [secretKey] is bearer material. [pubkey] is
+ * compressed, so its y parity is visible; [outputKey] is `Q`, the note.
+ */
+public data class NoteKey(
+    public val secretKey: String,
+    public val pubkey: String,
+    public val outputKey: String,
+) {
+    // a data class would print the secret key in toString, and logs are where those end up
+    override fun toString(): String = "NoteKey(outputKey=$outputKey)"
+}
+
+/**
+ * A `ck1`'s verified note key and whether it was signed under a superseded
+ * scheme: still spendable, but rotate it.
+ */
+public data class NoteOwner(
+    public val pubkeyXOnly: String,
+    public val legacy: Boolean,
 )
 
 /** The amount and 65-byte signature carried by a current amount-bearing `cs1`. */
@@ -115,9 +168,16 @@ public data class SettledNote(
     public val callback: String,
 )
 
-public data class MintFee(
+/**
+ * What a mint withholds: [baseFeeMsat] plus [feePpm] of the amount, and
+ * LUD-26's [addressFeeMsat] for registering a Lightning Address. The address
+ * fee is null when the mint does not advertise one: refuse to pay a
+ * registration invoice then.
+ */
+public data class MintFee @JvmOverloads constructor(
     public val baseFeeMsat: Long,
     public val feePpm: Long,
+    public val addressFeeMsat: Long? = null,
 )
 
 public data class PayRequest(

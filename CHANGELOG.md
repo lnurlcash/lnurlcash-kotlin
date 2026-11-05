@@ -3,6 +3,91 @@
 Semantic versioning. While the LUD-25 draft is unmerged, `0.x` minor bumps may
 carry breaking changes; pin an exact version.
 
+## Unreleased
+
+Breaking, for wallets as much as for code. `core.sha` moves to lnurlcash-core
+v0.3.1 (`93f779d`), which implements the final LUD-26 (luds `92e430f`) and the
+LUD-25 taproot unification (`6e865b1`, `50d740a`) that this binding had not yet
+taken. Graded against `lnurlcash-conformance` 0.16.2; CI pins that tag.
+Bindings and `THIRD_PARTY_NOTICES.txt` are regenerated. The version is not
+bumped here.
+
+### What breaks for people's wallets
+
+- **Every seed-derived key-path note gets a new key.** A wallet on this
+  version that only scans the LUD-26 tree finds none of the notes it minted
+  before. Scan the old tree with the `legacy*` functions below and rotate every
+  note found into a LUD-26 key. Until then the notes are safe, just invisible.
+- **Every registered Lightning Address stops working.** Its `cx1` is the old
+  64-byte shape, which LUD-26 mints no longer decode, and the old proof key
+  (index 0 of the address branch) is no share's key. Register a share's `cx1`
+  again.
+- **A `ck1` is bound to its mint.** It signs a sighash whose prevout commits to
+  the mint's hostname, so a `ck1` signed for one mint does not spend at
+  another, and one made by an earlier version is read as legacy: still
+  spendable at a mint that accepts it, but rotate it.
+- **Certificates are bound to the mint's domain**, `LNURLcash:<domain>:<amount_msat>:<hex(Q)>`.
+  One signed before luds `92abbb3` names no domain; `verifyNoteSignature` still
+  reads it, `verifyNoteSignatureHash` does not.
+- **A bearer note's id is `hex(Q)`, not `sha256(preimage)`.** `noteIdOf` now
+  returns `hex(Q)` for every spend; `hashK1` is the short form a lookup may
+  name it by. Outputs go to the mint as `p1`/`p2` and lookups as `?p=`, a
+  hash included: rotate, split, merge and info lookups no longer send `h`,
+  `h2` or `?h=` (a mint invoice request still repeats a hash as `h`).
+- **Hosts with a port** (`localhost:3338`) derive from the bare hostname, so a
+  development wallet against one sees a different tree.
+
+### API changes an app will notice
+
+- Removed: `deriveCashAddressNode`, `deriveNoteSecretKey` (both overloads),
+  `deriveNostrAddressNode`, and the three-argument `deriveNotePubkey`.
+- `verifyNoteSignature(k1, domain, amountMsat, signature, mintPubkey)` and
+  `verifyNoteSignatureHash(id, domain, ...)` gain `domain` as the second
+  argument.
+- `signNoteOwnership(secretKey, domain)`;
+  `recoverNoteOwnershipPubkey(payload, domain)` now returns `NoteOwner(pubkeyXOnly,
+  legacy)?` and is null for a spend signed for another mint.
+- `signAddressProof(shareSecretKey, action, domain, username, cx1 = null)`:
+  the proof is signed by the share's own key and bound to the service and, for
+  `register` and `update`, the `cx1`. `action` may now be `update`. New
+  `verifyAddressProof`.
+- `Cx1` is `Cx1(chainCode, pubkey)` with a 33-byte compressed key (the order is
+  BIP-32's); `pubkeyXOnly` is a computed property. `encodeCx1(chainCodeHex,
+  pubkeyHex)` takes the chain code FIRST, the reverse of before, and there is an
+  `encodeCx1(Cx1)`. A `cx1` is 65 bytes, 113 characters. `cashNodeToCx1` returns
+  the `cx1` string, not a `Cx1`.
+- `MintFee` gains `addressFeeMsat: Long?` (LUD-26's third `Mint fees` value;
+  null means refuse to pay a registration invoice). A `@JvmOverloads`
+  constructor keeps the two-argument form.
+
+### Added
+
+- `deriveServiceRoot(root, domain)`: `S = m/139'/d1/d2/d3/d4` from the bare
+  lowercase hostname.
+- `deriveNoteKey(S, NotePath)` with `NotePath.Wallet`, `Change` and `Share`
+  (`S/a'/0/i`, `S/a'/1/i`, `S/a'/2/n'/i`) returning `NoteKey(secretKey, pubkey,
+  outputKey)`, and `deriveWalletNoteKey`, `deriveChangeNoteKey` and
+  `deriveShareNoteKey` for the same without the wrapper. Levels are plain
+  `Int`, so Java needs no `UInt`; `NoteKey.toString()` does not print the secret.
+- `deriveShareNode(S, account, share)` and `deriveNotePubkey(cx1, index)`
+  (BIP-32 CKDpub, with a `Long` overload for Java).
+- `deriveNostrServiceRoot(secretKey, domain)`, replacing
+  `deriveNostrAddressNode`.
+- Read-only, for sweeping notes minted before LUD-26: `legacyBranchNode`,
+  `legacyCx1Of`, `legacyDeriveNotePubkey`, `legacyDeriveNoteSecretKey` and
+  `LEGACY_PURPOSE_WALLET`, `_CHANGE` and `_LIGHTNING_ADDRESS`.
+- Tests: the `lud26` vectors of spec-vectors.json (both seeds and accounts,
+  wallet, change and share notes, the `cx1`s, the key-path `ck1` and the three
+  registration proofs), part2.json's service roots, certificates, address
+  proofs and legacy tweak, all through the Kotlin facade.
+- `third-party-license-overrides/r-efi-6.0.0-AUTHORS.txt`: `r-efi 6.0.0`
+  (via `getrandom 0.4`) ships no licence file, only the `AUTHORS` text carrying
+  its MIT, Apache-2.0 and LGPL grants.
+
+Not wrapped yet: `checkNote`, `checkNoteUrl`, `checkNoteCertificate`,
+`checkSpend` and the `cw1` helpers from the core, and LUD-26's internal
+transfer (`internalTransferRequest`). They are in the generated bindings.
+
 ## 0.3.0 — 2026-09-16
 
 ### Ownership and address proofs sign a sha256 digest, not the raw message
