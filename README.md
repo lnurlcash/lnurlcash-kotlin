@@ -6,7 +6,7 @@ for Kotlin and the JVM, over the audited
 
 ```kotlin
 dependencies {
-    implementation("com.lnurlcash:lnurlcash-kotlin:0.1.1")
+    implementation("com.lnurlcash:lnurlcash-kotlin:0.4.0")
 }
 ```
 
@@ -31,7 +31,7 @@ jar:
 
 ```kotlin
 dependencies {
-    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.1.1")
+    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.4.0")
 }
 ```
 
