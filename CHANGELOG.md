@@ -3,7 +3,7 @@
 Semantic versioning. While the LUD-25 draft is unmerged, `0.x` minor bumps may
 carry breaking changes; pin an exact version.
 
-## Unreleased
+## 0.4.0 - 2026-11-05
 
 Breaking, for wallets as much as for code. `core.sha` moves to lnurlcash-core
 v0.3.1 (`93f779d`), which implements the final LUD-26 (luds `92e430f`) and the
