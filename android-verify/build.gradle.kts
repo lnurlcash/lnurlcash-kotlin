@@ -36,9 +36,18 @@ kotlin {
     }
 }
 
+// The version the root project builds, which CI publishes to mavenLocal just
+// before this runs. A fixed release number here resolved that release from
+// Maven Central instead, so this checked an old artifact, not the commit.
+val lnurlcashVersion: String = providers.gradleProperty("lnurlcashVersion").orNull
+    ?: Regex("""^version\s*=\s*"([^"]+)"""", RegexOption.MULTILINE)
+        .find(rootDir.resolve("../build.gradle.kts").readText())
+        ?.groupValues?.get(1)
+    ?: error("No version in ../build.gradle.kts; pass -PlnurlcashVersion=<version>")
+
 dependencies {
     // The whole point: one coordinate, resolved as a real consumer would.
-    implementation("com.lnurlcash:lnurlcash-kotlin-android:0.1.1")
+    implementation("com.lnurlcash:lnurlcash-kotlin-android:$lnurlcashVersion")
 
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
