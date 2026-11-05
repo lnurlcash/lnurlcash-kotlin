@@ -2,7 +2,10 @@ package com.lnurlcash.verify
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.lnurlcash.deriveCashDomainNode
+import com.lnurlcash.NotePath
 import com.lnurlcash.deriveCashRoot
+import com.lnurlcash.deriveNoteKey
+import com.lnurlcash.deriveServiceRoot
 import com.lnurlcash.isAllowedServiceUrl
 import com.lnurlcash.verifyNoteSignature
 import org.junit.Assert.assertEquals
@@ -48,6 +51,7 @@ class NativeLoadTest {
         assertFalse(
             verifyNoteSignature(
                 k1 = "00".repeat(32),
+                domain = "mint.example",
                 amountMsat = 1000L,
                 signatureHex = "00".repeat(64),
                 mintPubkeyHex = "02" + "00".repeat(32),
@@ -59,5 +63,11 @@ class NativeLoadTest {
     fun derivationMatchesTheConformanceVectors() {
         assertEquals(cashRoot, deriveCashRoot(seedHex))
         assertEquals(domainNode, deriveCashDomainNode(cashRoot, "mint.example"))
+        // LUD-26: the same node is the service root, and the notes hang off it (part2.json)
+        val serviceRoot = deriveServiceRoot(cashRoot, "mint.example")
+        assertEquals(domainNode, serviceRoot)
+        val note = deriveNoteKey(serviceRoot, NotePath.Wallet(account = 0, index = 0))
+        assertEquals("867fbf93ceb491d696a53c9f4c0f4a4a05bbfb2ab2c92b2ae052335071f1e195", note.secretKey)
+        assertEquals("9820be6eb2fd00e6dd739f029e58f61f4ae19a8ded723fc670db052285be2f80", note.outputKey)
     }
 }

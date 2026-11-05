@@ -57,4 +57,8 @@ internal fun JsonObject.obj(key: String): JsonObject = this[key]!!.jsonObject
 internal fun JsonObject.array(key: String): JsonArray = this[key]!!.jsonArray
 
 internal fun JsonElement.mintFee(): MintFee =
-    MintFee(baseFeeMsat = jsonObject.long("baseFeeMsat"), feePpm = jsonObject.long("feePpm"))
+    MintFee(
+        baseFeeMsat = jsonObject.long("baseFeeMsat"),
+        feePpm = jsonObject.long("feePpm"),
+        addressFeeMsat = jsonObject.longOrNull("addressFeeMsat"),
+    )

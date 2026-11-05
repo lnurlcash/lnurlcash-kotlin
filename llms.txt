@@ -27,7 +27,7 @@ SAME FfiRequest goes out each attempt - the replay is matched on the k1 set, h,
 h2 and amount, so a fresh secret would make it a different mutation and a
 second real burn.
 
-## CRITICAL: what a service owes a note (LUD-25 Part 2)
+## CRITICAL: what a service owes a note
 
 A reference mint with a signer returns a raw Part 1 signature for a legacy hash
 output. The tolerant default verifies that signature when present but also
@@ -62,7 +62,7 @@ suspend splitWithHash(callback, k1s, amountMsat, h, h2): MutationOutcome<HashedS
 suspend mergeWithHash(callback, k1s, h): MutationOutcome<HashedNote>
 suspend requestMintInvoiceWithHash(payCallback, amountMsat, h): Invoice
   The *WithHash forms take an output the caller already holds: a hash, or a
-  Part 2 cp1. They never see the secret behind it, so Unknown/Unverifiable
+  cp1. They never see the secret behind it, so Unknown/Unverifiable
   carry NO secrets from them: persist it BEFORE the call.
 
 Top-level pure functions: verifyNoteSignature, verifyNoteSignatureHash,
@@ -73,60 +73,89 @@ parseMintFee, applyMintFee, grossUpForMintFee, describeMintFee,
 decodeBolt11AmountMsat, isBolt11Invoice, sameInvoice.
 
 Seed derivation (nodes are privateKey || chainCode, 128 hex chars):
-deriveCashRoot(seedHex), deriveCashDomainNode(root, host), cashDomainIndices(root, host),
+deriveCashRoot(seedHex), deriveCashDomainNode(root, host) (port kept; use
+deriveServiceRoot below), cashDomainIndices(root, host),
 deriveCashMaster(seedHex), deriveCashChild(node, index: UInt) (hardened iff
 index >= 2^31). Part 1 secrets are plain randomness, not seed-derived.
 LEGACY, do not mint under: deriveNoteRoot, deriveNoteSecret.
 
 Amounts are Long milli-satoshis everywhere (the bindings' ULong is converted).
 
-## LUD-25 Part 2: a note keyed by a public key, spent by a BIP-340 Schnorr proof
+## LUD-25 notes keyed by a public key, and LUD-26 derivation
 
 Hex in, hex out, as everywhere else here. Decoders return null, never throw.
-encodeCp1/decodeCp1/isCp1   note pubkey, 32-byte x-only, bech32m "cp"
-encodeCk1/decodeCk1/isCk1   bearer secret, 96-byte x-only pk||Schnorr sig, "ck". SPENDS
-  decode/is also accept the legacy 65-byte recoverable-ECDSA shape so an old
-  note can be rotated; encode only takes the current 96 bytes
+Every note is a taproot output key Q. A ck1 spends it at ONE mint, so signing
+and checking one take the domain (a note URL, mint URL or host; only its
+lowercase hostname counts).
+encodeCp1/decodeCp1/isCp1   note output key Q, 32-byte x-only, bech32m "cp"
+encodeCk1/decodeCk1/isCk1   bearer secret, 96-byte Q||Schnorr sig over the
+  domain-bound BIP-341 sighash, "ck". SPENDS. decode/is also accept the legacy
+  65-byte recoverable-ECDSA shape so an old note can be rotated; encode only
+  takes the current 96 bytes
 encodeCs1WithAmount/decodeCs1WithAmount/isCs1WithAmount
   current mint certificate, Cs1(amountMsat, signature); HRP is "cs" plus the
-  BOLT11 amount suffix. Signature covers LNURLcash:<amount_msat>:<hex(pk)>.
+  BOLT11 amount suffix. Signature covers LNURLcash:<domain>:<amount_msat>:<hex(Q)>.
 encodeCs1/decodeCs1/isCs1   LEGACY fixed "cs" HRP only
 decodeAnyCs1/isAnyCs1       migration helpers accepting either certificate
-encodeCx1/decodeCx1/isCx1   watch-only branch, Cx1(pubkeyXOnly, chainCode), "cx"
+encodeCx1(chainCodeHex, pubkeyHex)/encodeCx1(Cx1)/decodeCx1/isCx1   a share,
+  Cx1(chainCode, pubkey) with a 33-byte compressed key, 65 bytes, "cx". The
+  argument order is chain code FIRST (BIP-32). The old 64-byte shape is refused.
   No length limit; all-uppercase accepted; mixed case, a bech32 (not
   bech32m) checksum, the wrong hrp or length and non-zero padding refused
-deriveCashAddressNode(root, host)   m/139'/d1/d2/d3/d4, hashing key m/139'/0:
-  the spec's literal path, the same node deriveCashDomainNode returns. Bearer
-  material
-cashNodeToCx1(node): Cx1   the part to hand out; it links every note on the
-  branch but spends none
-deriveNotePubkey(P, chainCode, i: UInt)   watch-only; i any UInt, never
-  hardened. t >= n is an error, never reduced: use the next index
-deriveNoteSecretKey(p, chainCode, i: UInt)   negates p first when P has odd y
-Java: both note derivation functions also accept a long index in 0..4294967295;
-out-of-range indices throw IllegalArgumentException. Kotlin UInt overloads remain.
-signNoteOwnership(sk) -> 96-byte hex   pk||BIP-340 sig over sha256("LNURLcash"),
-  zero auxiliary input so seed recovery reproduces the ck1. encodeCk1 it for
-  the wire
-signAddressProof(indexZeroSk, action, username) -> 64-byte hex
-  reference address register/update/unregister proof; BIP-340 over
-  sha256("LNURLcash:<register|unregister>:<normalised username>")
-recoverNoteOwnershipPubkey(payload) -> pk?   verifies against the sha256
-  digest, then the pre-2026-09-16 raw message, before returning the key
-noteIdOf(k1) -> id?   sha256(k1) for a secret, the verified embedded key for a
-  ck1. Compare notes by this, never by k1
-noteLookupOf(k1) -> String?   the hash, or the cp1 for a ck1; pass it to
-  buildNoteInfoUrlByHash, which sends a cp1 as p and a hash as h
-verifyNoteSignature also takes a ck1 as k1 and a cs1 as the signature;
-  verifyNoteSignatureHash(id, amountMsat, sig, mintPubkey) checks by pk or hash
-Wire: a ck1 goes wherever a k1 does; a cp1 wherever an output does.
+deriveCashRoot(seed)            m/139'
+deriveServiceRoot(root, domain) S = m/139'/d1/d2/d3/d4, hashing key m/139'/0;
+  the domain is reduced to its lowercase hostname, port dropped. Bearer material
+deriveNoteKey(S, path): NoteKey(secretKey, pubkey, outputKey)   path is
+  NotePath.Wallet(account, index)   S/a'/0/i
+  NotePath.Change(account, index)   S/a'/1/i
+  NotePath.Share(account, share, index)   S/a'/2/n'/i
+  Int levels (all below 2^31), negative throws. deriveWalletNoteKey /
+  deriveChangeNoteKey / deriveShareNoteKey are the same without the wrapper.
+  outputKey is Q: encodeCp1 it to name it, signNoteOwnership its secretKey
+deriveShareNode(S, account, share)   S/a'/2/n' as privateKey||chainCode
+cashNodeToCx1(node): String   the cx1 to hand out; it links every note on the
+  share but spends none
+deriveNotePubkey(cx1, i: UInt)   Q of note i on the share, by CKDpub; i any
+  UInt, never hardened. An unusable index is an error: use the next one
+Java: deriveNotePubkey also accepts a long index in 0..4294967295;
+out-of-range indices throw IllegalArgumentException.
+signNoteOwnership(sk, domain) -> 96-byte hex   Q||BIP-340 sig, zero auxiliary
+  input so seed recovery reproduces the ck1. encodeCk1 it for the wire
+signAddressProof(shareSk, action, domain, username, cx1?) -> 64-byte hex
+  register: LNURLcash:register:<domain>:<username>:<cx1>
+  update:   LNURLcash:update:<domain>:<username>:<new cx1>, by the key on file
+  unregister: LNURLcash:unregister:<domain>:<username>, no cx1
+  sha256 of that, BIP-340, by the SHARE's own key (the first 64 hex of
+  deriveShareNode). Username lowercased. verifyAddressProof(signerCx1, sig,
+  action, domain, username, cx1?) is the service's check
+recoverNoteOwnershipPubkey(payload, domain) -> NoteOwner(pubkeyXOnly, legacy)?
+  null for a spend signed for another mint. legacy=true: older scheme, rotate
+noteIdOf(k1) -> id?   hex(Q) for every spend: a preimage, a ck1. NOT sha256 of
+  a preimage any more. Compare notes by this, never by k1
+noteLookupOf(k1) -> String?   a preimage's hash, or the cp1 for a ck1; pass it
+  to buildNoteInfoUrlByHash, which sends it as p either way
+verifyNoteSignature(k1, domain, amountMsat, sig, mintPubkey) also takes a ck1
+  as k1 and a cs1 as the signature, and reads certificates signed before the
+  domain was bound; verifyNoteSignatureHash(id, domain, amountMsat, sig,
+  mintPubkey) checks the current certificate over hex(Q) only
+Wire: a ck1 goes wherever a k1 does; a cp1 or a hash wherever an output does.
   requestMintInvoiceWithHash: a cp1 goes as the comment alone (a hash also
-  sends h). rotate/split/mergeWithHash: p1/p2 for a cp1, h/h2 for a hash.
+  sends h). rotate/split/mergeWithHash: p1/p2 for either; h/h2 are not sent.
   fetchNoteInfo compares an echoed ck1 by its verified note id; another key
   is refused
-deriveNostrCashSeed(sk) / deriveNostrAddressNode(sk, host)   NOT LUD-25: a
-  branch from a Nostr identity key, via
-  HMAC-SHA256(key = sk, msg = "LNURLcash/nostr-seed"), then the address path
+MintFee(baseFeeMsat, feePpm, addressFeeMsat?)   "Mint fees: base,ppm,address";
+  a null addressFeeMsat means refuse to pay a registration invoice
+deriveNostrCashSeed(sk) / deriveNostrServiceRoot(sk, domain)   NOT LUD-26: the
+  same tree from a Nostr identity key, via
+  HMAC-SHA256(key = sk, msg = "LNURLcash/nostr-seed"). Replaces
+  deriveNostrAddressNode
+SUPERSEDED, for sweeping notes minted before LUD-26, never for minting:
+  legacyBranchNode(root, host) (host as stored, port included), legacyCx1Of(node)
+  (the 64-byte shape), legacyDeriveNotePubkey(legacyCx1, purpose: UInt?, i),
+  legacyDeriveNoteSecretKey(node, purpose, i), LEGACY_PURPOSE_WALLET/CHANGE/
+  LIGHTNING_ADDRESS (0/1/2; null purpose is the scheme before purposes).
+  REMOVED: deriveCashAddressNode, deriveNoteSecretKey, the old 3-argument
+  deriveNotePubkey, deriveNostrAddressNode.
 
 ## MutationOutcome
 

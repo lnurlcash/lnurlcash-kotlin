@@ -40,6 +40,9 @@ class VectorTest {
                 case.bool("valid"),
                 verifyNoteSignature(
                     case.str("k1"),
+                    // signature.json predates certificates bound to a domain: a
+                    // bearer note opens anywhere, and the legacy message names none
+                    "mint.example",
                     case.long("amountMsat"),
                     case.str("signature"),
                     case.str("mintPubkey"),
@@ -328,10 +331,11 @@ class DerivationVectorTest {
     }
 
     @Test
-    fun `builds the private hash lookup a restore walk needs`() {
+    fun `builds the private lookup a restore walk needs`() {
         val h = "ab".repeat(32)
         assertEquals(
-            "https://mint.example/w?h=$h",
+            // every lookup is p now, a bearer note's hash included
+            "https://mint.example/w?p=$h",
             buildNoteInfoUrlByHash("https://mint.example/w?k1=aa&amount=1", h),
         )
         assertNull(buildNoteInfoUrlByHash("https://mint.example/w", "not-a-hash"))

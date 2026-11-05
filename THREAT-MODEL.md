@@ -59,7 +59,8 @@ would otherwise mint a self-contained fake note that verifies against
 nothing.
 
 **A service that inflates a note.** A `cp1` note's certificate commits to the
-amount, and so does the raw Part 1 signature returned by the reference mint
+amount and to the mint's domain (a certificate issued for another mint does not
+verify here), and so does the raw Part 1 signature returned by the reference mint
 when it has a signer. A service reporting more than it signed fails
 verification, without the holder contacting anyone. The tolerant default also
 admits a legacy hash output from a no-signer mint; that particular note has no

@@ -90,8 +90,8 @@ class ProtocolTest {
         assertEquals("outstanding", mint.noteState(rotated.k1))
 
         val signature = rotated.signature!!
-        assertTrue(verifyNoteSignature(rotated.k1, 21_000, signature, mint.pubkey))
-        assertTrue(!verifyNoteSignature(rotated.k1, 21_001, signature, mint.pubkey))
+        assertTrue(verifyNoteSignature(rotated.k1, mint.url, 21_000, signature, mint.pubkey))
+        assertTrue(!verifyNoteSignature(rotated.k1, mint.url, 21_001, signature, mint.pubkey))
     }
 
     @Test
@@ -99,7 +99,7 @@ class ProtocolTest {
         val k1 = secret(5)
         mint.credit(k1, 21_000)
         val rotated = client.rotate(mint.callback(), k1).getOrThrow()
-        assertTrue(verifyNoteSignature(rotated.k1, 21_000, rotated.signature!!, mint.pubkey))
+        assertTrue(verifyNoteSignature(rotated.k1, mint.url, 21_000, rotated.signature!!, mint.pubkey))
     }
 
     @Test
@@ -123,7 +123,7 @@ class ProtocolTest {
         assertEquals("burned", mint.noteState(k1))
         assertEquals(5_000, client.fetchNoteInfo(mint.noteUrl(split.k1)).maxWithdrawableMsat)
         assertEquals(16_000, client.fetchNoteInfo(mint.noteUrl(split.change)).maxWithdrawableMsat)
-        assertTrue(verifyNoteSignature(split.k1, 5_000, split.signature!!, mint.pubkey))
+        assertTrue(verifyNoteSignature(split.k1, mint.url, 5_000, split.signature!!, mint.pubkey))
     }
 
     @Test
@@ -525,7 +525,7 @@ class ProtocolTest {
             assertEquals(1_021_000, info.maxWithdrawableMsat)
             // the signature was issued over the true amount, so an offline holder
             // catches the inflation without asking anyone
-            assertTrue(!verifyNoteSignature(k1, info.maxWithdrawableMsat, signature, mint.pubkey))
-            assertTrue(verifyNoteSignature(k1, 21_000, signature, mint.pubkey))
+            assertTrue(!verifyNoteSignature(k1, mint.url, info.maxWithdrawableMsat, signature, mint.pubkey))
+            assertTrue(verifyNoteSignature(k1, mint.url, 21_000, signature, mint.pubkey))
         }
 }

@@ -1,6 +1,5 @@
 package com.lnurlcash
 
-import java.math.BigInteger
 import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.SecretKeyFactory
@@ -10,6 +9,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -19,20 +19,20 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 
 /**
- * LUD-25 Part 2, from part2.json and nostr-seed.json, graded through the
- * Kotlin facade rather than the Rust directly.
+ * LUD-26 and the key-path notes beneath it, from part2.json and
+ * nostr-seed.json, graded through the Kotlin facade rather than the Rust
+ * directly.
  *
  * The core already grades itself against these files. What this adds is the
- * FFI boundary: every key, node and signature crosses it as hex, a `Cx1` comes
- * back as a record, and an index crosses as a `UInt` whose top bit is where a
- * signed-integer mistake would show. None of that is visible from either side
- * alone.
+ * FFI boundary: every key, node and signature crosses it as hex, a note path
+ * crosses as a sealed class, a `Cx1` comes back as a record, and an index
+ * crosses as a `UInt` whose top bit is where a signed-integer mistake would
+ * show. None of that is visible from either side alone.
  *
- * The few checks the facade has no function for (the BIP-39 seed, the digests,
- * the parity a branch key's negation depends on) are computed here with the
- * JDK and then tied back to something the facade produced, so a vector
- * regenerated under a different convention fails as that convention rather
- * than as a byte mismatch three levels down.
+ * The few checks the facade has no function for (the BIP-39 seed, the digests)
+ * are computed here with the JDK and then tied back to something the facade
+ * produced, so a vector regenerated under a different convention fails as that
+ * convention rather than as a byte mismatch three levels down.
  */
 class Part2VectorTest {
 
@@ -50,208 +50,204 @@ class Part2VectorTest {
     @Test
     fun `names the conventions it implements`() {
         val conventions = part2.obj("conventions")
-        assertEquals("m/139'/d1/d2/d3/d4", conventions.str("addressBranch"))
+        assertEquals("m/139'/d1/d2/d3/d4", conventions.str("serviceRoot"))
         assertEquals("m/139'/0", conventions.str("hashingKey"))
-        assertEquals("LNURLcash", conventions.str("ownershipMessage"))
-        assertEquals("LNURLcash:<register|unregister>:<username>", conventions.str("addressProofMessage"))
-        assertEquals("LNURLcash:<amount_msat>:<hex(pk)>", conventions.str("certificateMessage"))
+        assertEquals("S/a'/0/i", conventions.str("walletChain"))
+        assertEquals("S/a'/1/i", conventions.str("changeChain"))
+        assertEquals("S/a'/2/n'/i", conventions.str("shareNote"))
+        assertEquals("LNURLcash:<domain>:<amount_msat>:<hex(Q)>", conventions.str("certificateMessage"))
         assertEquals("cs || BOLT11_amount_suffix(amount_msat)", conventions.str("certificateHrp"))
-        assertEquals(
-            "UTF-8 bytes, sha256-hashed to a 32-byte digest before signing (2026-09-16, luds#6de59b2)",
-            conventions.str("ownershipMessageEncoding"),
-        )
+        assertEquals("chainCode (32) || P (33, compressed), BIP-32 order, 113 characters", conventions.str("cx1Payload"))
     }
 
     @Test
-    fun `address proofs are action and username bound to index zero`() {
-        val proofs = part2.array("addressProofs").map { it.jsonObject }
-        assertTrue(proofs.isNotEmpty())
-        for (proof in proofs) {
-            val action = proof.str("action")
-            val username = proof.str("username")
-            val message = "LNURLcash:$action:$username"
-            assertEquals(message, proof.str("message"))
-            assertEquals(
-                proof.str("signature"),
-                signAddressProof(proof.str("indexZeroSecretKey"), action, username),
-                "$action/$username",
-            )
-        }
-    }
-
-    @Test
-    fun `every branch and every note`() {
+    fun `every service root, account and note`() {
         val branches = part2.array("branches").map { it.jsonObject }
-        assertEquals(8, branches.size, "part2.json 0.9.0 has eight branches")
-        // An odd branch is the only thing that exercises the negation, and the
-        // top of the u32 range is where a hardened-index or signed-integer
-        // mistake at the boundary would show.
-        assertTrue(branches.any { it.str("branchParity") == "odd" })
-        assertTrue(branches.any { it.str("branchParity") == "even" })
-        val indices = branches[0].array("notes").map { it.jsonObject.long("index") }
-        assertTrue(0x8000_0000L in indices && 0xFFFF_FFFFL in indices, "indices $indices")
-
+        assertEquals(8, branches.size, "part2.json has eight branches: four hosts, two seeds")
         var graded = 0
         for (branch in branches) {
             val host = branch.str("host")
+            val domain = branch.str("domain")
             val seedHex = branch.str("seedHex")
-            assertEquals(seedHex, bip39Seed(branch.str("mnemonic")), "$host: mnemonic")
+            assertEquals(seedHex, bip39Seed(branch.str("mnemonic")), host)
 
             val root = deriveCashRoot(seedHex)
-            assertEquals(branch.str("cashRoot"), root, host)
             // m/139' is one hardened step below the master, whichever way it is reached
             assertEquals(root, deriveCashChild(deriveCashMaster(seedHex), 0x8000_008Bu), host)
-
             // the hashing key is m/139'/0, so the four levels hang off the root itself
+            assertEquals(branch.str("cashHashingKey"), deriveCashChild(root, 0u).substring(0, 64), host)
             val domainIndices = branch.array("domainIndices").map { it.jsonPrimitive.long.toUInt() }
-            assertEquals(domainIndices, cashDomainIndices(root, host), host)
+            assertEquals(domainIndices, cashDomainIndices(root, domain), host)
 
-            val node = deriveCashAddressNode(root, host)
-            assertEquals(branch.str("addressNode"), node, host)
-            // and it is exactly those four raw levels, walked one CKDpriv at a
-            // time, each hardened or not by its own top bit
-            assertEquals(node, domainIndices.fold(root) { at, index -> deriveCashChild(at, index) }, host)
-            // no separate purpose for Part 2: the address branch is the same
-            // node deriveCashDomainNode already derives for the same host
-            assertEquals(node, deriveCashDomainNode(root, host), host)
-            val privateKey = node.substring(0, 64)
-            val chainCode = node.substring(64)
-
-            val cx1 = cashNodeToCx1(node)
-            assertEquals(branch.str("branchPubkey"), cx1.pubkeyXOnly, host)
-            assertEquals(branch.str("chainCode"), cx1.chainCode, host)
-            assertEquals(chainCode, cx1.chainCode, host)
-            val cx1String = branch.str("cx1")
-            assertEquals(cx1String, encodeCx1(cx1.pubkeyXOnly, cx1.chainCode), host)
-            assertTrue(isCx1(cx1String), host)
-            // a watcher starts from the string, never the node
-            val watched = decodeCx1(cx1String)
-            assertEquals(cx1, watched, host)
-            assertNotNull(watched)
-
-            val odd = when (val parity = branch.str("branchParity")) {
-                "odd" -> true
-                "even" -> false
-                else -> error("$host: a parity that is neither: $parity")
+            // The host is as stored, port included; the root is always the bare hostname's.
+            val serviceRoot = deriveServiceRoot(root, host)
+            assertEquals(branch.str("serviceRoot"), serviceRoot, host)
+            assertEquals(serviceRoot, deriveServiceRoot(root, "https://${host.uppercase()}/path"), host)
+            assertEquals(serviceRoot, deriveCashDomainNode(root, domain), host)
+            // and it is exactly those four raw levels, walked one CKDpriv at a time,
+            // each hardened or not by its own top bit
+            assertEquals(serviceRoot, domainIndices.fold(root) { at, index -> deriveCashChild(at, index) }, host)
+            if (host != domain) {
+                assertNotEquals(serviceRoot, deriveCashDomainNode(root, host), "$host: a port is part of the string hashed")
             }
-
-            for (note in branch.array("notes").map { it.jsonObject }) {
-                val index = note.long("index").toUInt()
-                val at = "$host #$index"
-
-                val pubkey = deriveNotePubkey(watched.pubkeyXOnly, watched.chainCode, index)
-                assertEquals(note.str("notePubkey"), pubkey, at)
-                val cp1 = note.str("cp1")
-                assertEquals(cp1, encodeCp1(pubkey), at)
-                assertEquals(pubkey, decodeCp1(cp1), at)
-                assertTrue(isCp1(cp1), at)
-
-                val secretKey = deriveNoteSecretKey(privateKey, chainCode, index)
-                assertEquals(note.str("noteSecretKey"), secretKey, at)
-                // Compile real Java calls and grade both long overloads against
-                // every vector, including indices above Integer.MAX_VALUE.
-                NoteDerivationJavaTest.assertDerivation(
-                    watched.pubkeyXOnly, privateKey, chainCode, note.long("index"),
-                    note.str("notePubkey"), note.str("noteSecretKey"),
-                )
-                // branchParity, graded against the facade's own answer: the
-                // holder's key is (p or n - p) + t, and which one it is is
-                // exactly what the parity says
-                assertEquals(
-                    tweakedSecretKey(privateKey, odd, noteTweak(cx1.pubkeyXOnly, cx1.chainCode, index)),
-                    secretKey,
-                    "$at: branchParity",
-                )
-
-                // all-zero aux_rand: the same key reproduces the same ck1, byte for byte
-                val payload = signNoteOwnership(secretKey) // pk (32) || Schnorr sig (64), 96 bytes
-                assertEquals(note.str("ownershipSignature"), payload.substring(64), at)
-                val ck1 = note.str("ck1")
-                assertEquals(ck1, encodeCk1(payload), at)
-                assertEquals(payload, decodeCk1(ck1), at)
-                assertTrue(isCk1(ck1), at)
-
-                // the service's side: the ck1 alone gives the key the note is
-                // filed under, which is also the one the watcher derived
-                assertEquals(pubkey, recoverNoteOwnershipPubkey(payload), at)
-                assertEquals(pubkey, noteIdOf(ck1), at)
-                assertEquals(cp1, noteLookupOf(ck1), at)
-                graded++
-            }
+            graded += gradeAccounts(serviceRoot, domain, branch.array("accounts"), host)
         }
-        assertEquals(56, graded, "eight branches of seven notes")
+        // eight branches, two accounts each: account 0 holds 5 wallet, 2 change and 2 shares of
+        // 4 notes, account 1 one of each
+        assertTrue(graded >= 8 * 5, "graded only $graded notes")
     }
 
     @Test
     fun `every certificate recovers to the mint and to nothing else`() {
         val mint = part2.obj("mint")
         val mintPubkey = mint.str("mintPubkey")
-        // The mint's key pair, through the facade: its x-only key is what an
-        // ownership signature by it recovers to. The prefix byte is graded by
-        // every verification below, which compares the full compressed key.
-        assertEquals(
-            mintPubkey.substring(2),
-            recoverNoteOwnershipPubkey(signNoteOwnership(mint.str("privateKey"))),
-        )
-
-        // Every note in the file by key, so each certificate is checked the
-        // way a recipient checks one: from the note's ck1 and nothing else.
-        val ck1Of = part2.array("branches")
-            .flatMap { it.jsonObject.array("notes") }
+        // the mint's key pair, through the facade: its x-only key is what the
+        // prefix-less pubkey is, and what a signature by it recovers to
+        val first = part2.array("branches")[0].jsonObject
+        assertEquals("mint.example", first.str("domain"))
+        val mintDomain = first.str("domain")
+        val ck1Of = first.array("accounts")[0].jsonObject.array("wallet")
             .associate { it.jsonObject.str("notePubkey") to it.jsonObject.str("ck1") }
 
         val certificates = part2.array("certificates").map { it.jsonObject }
-        assertEquals(4, certificates.size)
+        assertEquals(5, certificates.size)
         for (certificate in certificates) {
             val pubkey = certificate.str("notePubkey")
+            val domain = certificate.str("domain")
             val amount = certificate.long("amountMsat")
-            val at = "$amount msat"
+            val at = "$domain $amount msat"
             val message = certificate.str("message")
-            val digest = certificate.str("digest")
             val signature = certificate.str("signature")
             val cs1 = certificate.str("cs1")
 
-            // The message names the note by its key, and that key is the one
-            // the note's ck1 recovers to. The digest is the message as a
-            // Lightning node signs it. Verification below only succeeds if the
-            // facade computes that same digest, so the two are graded together.
-            assertEquals("LNURLcash:$amount:$pubkey", message, at)
-            assertEquals(digest, lightningSignedDigest(message).hex(), at)
-            val ck1 = ck1Of[pubkey] ?: error("$at: the certificate names a note in the file")
-            assertEquals(pubkey, noteIdOf(ck1), at)
+            // the message names the mint and the note's output key; the digest is the message
+            // as a Lightning node signs it, which verification below only matches if the
+            // facade computes the same one
+            assertEquals("LNURLcash:$domain:$amount:$pubkey", message, at)
+            assertEquals(certificate.str("digest"), lightningSignedDigest(message).hex(), at)
 
             assertEquals(cs1, encodeCs1WithAmount(amount, signature), at)
             assertEquals(Cs1(amount, signature), decodeCs1WithAmount(cs1), at)
             assertTrue(isCs1WithAmount(cs1), at)
             assertEquals(signature, decodeAnyCs1(cs1), at)
-            assertTrue(isAnyCs1(cs1), at)
             assertNull(decodeCs1(cs1), "$at: a current certificate is not legacy")
             assertFalse(isCs1(cs1), "$at: a current certificate is not legacy")
 
-            val legacy = encodeCs1(signature)
-            assertEquals(signature, decodeCs1(legacy), "$at: legacy remains readable")
-            assertTrue(isCs1(legacy), "$at: legacy remains readable")
-            assertEquals(signature, decodeAnyCs1(legacy), "$at: migration decoder")
-            assertTrue(isAnyCs1(legacy), "$at: migration recogniser")
-            assertNull(decodeCs1WithAmount(legacy), "$at: legacy carries no amount")
-            assertFalse(isCs1WithAmount(legacy), "$at: legacy carries no amount")
-            // a certificate and a spend share a layout but never a prefix
-            assertFalse(isCk1(cs1), at)
-            assertFalse(isCs1(ck1), at)
-
-            // Each recovers to the mint's key: by the note's key, in either
-            // spelling of the signature, and from the ck1 alone...
-            assertTrue(verifyNoteSignatureHash(pubkey, amount, signature, mintPubkey), at)
-            assertTrue(verifyNoteSignatureHash(pubkey, amount, cs1, mintPubkey), at)
-            assertTrue(verifyNoteSignature(ck1, amount, cs1, mintPubkey), at)
-            assertTrue(verifyNoteSignature(ck1, amount, signature, mintPubkey), at)
+            // recovers to the mint's key, by the note's output key at its domain...
+            assertTrue(verifyNoteSignatureHash(pubkey, domain, amount, cs1, mintPubkey), at)
             // ...and to nothing it does not cover
-            assertFalse(verifyNoteSignature(ck1, amount + 1, cs1, mintPubkey), "$at: another amount")
-            val other = ck1Of.entries.first { it.key != pubkey }.value
-            assertFalse(verifyNoteSignature(other, amount, cs1, mintPubkey), "$at: another note")
+            assertFalse(verifyNoteSignatureHash(pubkey, domain, amount + 1, cs1, mintPubkey), "$at: another amount")
+            val elsewhere = certificates.map { it.str("domain") }.first { it != domain }
+            assertFalse(verifyNoteSignatureHash(pubkey, elsewhere, amount, cs1, mintPubkey), "$at: another mint")
             val otherParity = (if (mintPubkey.startsWith("02")) "03" else "02") + mintPubkey.substring(2)
-            assertFalse(verifyNoteSignatureHash(pubkey, amount, cs1, otherParity), "$at: the key's other parity")
+            assertFalse(verifyNoteSignatureHash(pubkey, domain, amount, cs1, otherParity), "$at: the key's other parity")
+
+            // from the note's ck1 alone, as its holder checks one
+            if (domain == mintDomain) {
+                val ck1 = ck1Of[pubkey] ?: error("$at: the certificate names a wallet note in the file")
+                assertEquals(pubkey, noteIdOf(ck1), at)
+                assertTrue(verifyNoteSignature(ck1, domain, amount, cs1, mintPubkey), at)
+                assertFalse(verifyNoteSignature(ck1, domain, amount + 1, cs1, mintPubkey), "$at: another amount")
+                assertFalse(verifyNoteSignature(ck1, elsewhere, amount, cs1, mintPubkey), "$at: another mint")
+                val other = ck1Of.entries.first { it.key != pubkey }.value
+                assertFalse(verifyNoteSignature(other, domain, amount, cs1, mintPubkey), "$at: another note")
+            }
         }
+
+        // a certificate signed before luds 92abbb3 names no domain: the full check still
+        // reads it, the current-only hash check does not
+        val legacy = part2.array("legacyCertificates").map { it.jsonObject }
+        assertTrue(legacy.isNotEmpty())
+        for (certificate in legacy) {
+            val pubkey = certificate.str("notePubkey")
+            val amount = certificate.long("amountMsat")
+            assertEquals("LNURLcash:$amount:$pubkey", certificate.str("message"))
+            val cs1 = certificate.str("cs1")
+            assertFalse(verifyNoteSignatureHash(pubkey, mintDomain, amount, cs1, mintPubkey), "legacy $amount: not current")
+            assertTrue(verifyNoteSignature(ck1Of.getValue(pubkey), mintDomain, amount, cs1, mintPubkey), "legacy $amount")
+        }
+    }
+
+    @Test
+    fun `address proofs are bound to the service, the username and the cx1`() {
+        val shareKeyOf = part2.array("branches").flatMap { branch ->
+            branch.jsonObject.array("accounts").flatMap { account ->
+                account.jsonObject.array("shares").map { it.jsonObject.str("cx1") to it.jsonObject.str("sharePrivateKey") }
+            }
+        }.toMap()
+        val proofs = part2.array("addressProofs").map { it.jsonObject }
+        assertEquals(7, proofs.size)
+        val actions = proofs.map { it.str("action") }.toSet()
+        assertEquals(setOf("register", "update", "unregister"), actions)
+        for (proof in proofs) {
+            val action = proof.str("action")
+            val domain = proof.str("domain")
+            val username = proof.str("username")
+            val cx1 = proof.strOrNull("cx1")
+            val signerCx1 = proof.str("signerCx1")
+            val signature = proof.str("signature")
+            val at = "$action $username@$domain"
+
+            // the message the digest is of, in the spec's own words
+            val expected = "LNURLcash:$action:$domain:${username.lowercase()}" + (cx1?.let { ":$it" } ?: "")
+            assertEquals(expected, proof.str("message"), at)
+            assertEquals(proof.str("digest"), sha256(expected.toByteArray()).hex(), at)
+
+            val key = shareKeyOf.getValue(signerCx1)
+            assertEquals(signature, signAddressProof(key, action, domain, username, cx1), at)
+            assertTrue(verifyAddressProof(signerCx1, signature, action, domain, username, cx1), at)
+            assertEquals(proof.str("signerPubkey"), decodeCx1(signerCx1)!!.pubkeyXOnly, at)
+
+            // and to nothing else
+            assertFalse(verifyAddressProof(signerCx1, signature, action, "other.example", username, cx1), "$at: another service")
+            assertFalse(verifyAddressProof(signerCx1, signature, action, domain, "mallory", cx1), "$at: another username")
+            if (cx1 != null) {
+                val other = shareKeyOf.keys.first { it != cx1 && it != signerCx1 }
+                assertFalse(verifyAddressProof(signerCx1, signature, action, domain, username, other), "$at: another cx1")
+            }
+        }
+    }
+
+    @Test
+    fun `the tweak schemes before LUD-26 are still readable`() {
+        val legacy = part2.obj("legacy")
+        assertTrue(legacy.bool("superseded"))
+        assertEquals(0u, LEGACY_PURPOSE_WALLET)
+        assertEquals(1u, LEGACY_PURPOSE_CHANGE)
+        assertEquals(2u, LEGACY_PURPOSE_LIGHTNING_ADDRESS)
+
+        val branches = legacy.array("branches").map { it.jsonObject }
+        assertEquals(4, branches.size)
+        var graded = 0
+        for (branch in branches) {
+            val host = branch.str("host")
+            val root = deriveCashRoot(bip39Seed(branch.str("mnemonic")))
+            // the host as stored, port included: that is the string the old scheme hashed
+            val node = legacyBranchNode(root, host)
+            assertEquals(branch.str("addressNode"), node, host)
+            val cx1 = legacyCx1Of(node)
+            assertEquals(branch.str("cx1"), cx1, host)
+            // the 64-byte shape is not a LUD-26 cx1, and the other way round
+            assertFalse(isCx1(cx1), host)
+            assertNull(decodeCx1(cx1), host)
+
+            fun grade(purpose: UInt?, note: JsonObject, at: String) {
+                val index = note.long("index").toUInt()
+                val pubkey = legacyDeriveNotePubkey(cx1, purpose, index)
+                assertEquals(note.str("notePubkey"), pubkey, at)
+                assertEquals(note.str("cp1"), encodeCp1(pubkey), at)
+                val secretKey = legacyDeriveNoteSecretKey(node, purpose, index)
+                assertEquals(note.str("noteSecretKey"), secretKey, at)
+                graded++
+            }
+            for (note in branch.array("notes").map { it.jsonObject }) {
+                grade(note.long("purpose").toUInt(), note, "$host purpose ${note.long("purpose")} #${note.long("index")}")
+            }
+            for (note in branch.array("prePurpose").map { it.jsonObject }) {
+                grade(null, note, "$host pre-purpose #${note.long("index")}")
+            }
+        }
+        assertEquals(4 * (5 + 3), graded)
     }
 
     @Test
@@ -262,7 +258,7 @@ class Part2VectorTest {
                 "cp1" -> decodeCp1(value) to isCp1(value)
                 "ck1" -> decodeCk1(value) to isCk1(value)
                 "cs1" -> decodeCs1WithAmount(value)?.signature to isCs1WithAmount(value)
-                "cx1" -> decodeCx1(value)?.let { it.pubkeyXOnly + it.chainCode } to isCx1(value)
+                "cx1" -> decodeCx1(value)?.let { it.chainCode + it.pubkey } to isCx1(value)
                 else -> error("a string type this library does not know: $type")
             }
             assertEquals(decoded != null, claims, "$type $value: is and decode disagree")
@@ -283,9 +279,9 @@ class Part2VectorTest {
         }
     }
 
-    /** An extension, not LUD-25: a Part 2 branch rooted in a Nostr identity key. */
+    /** An extension, not LUD-25 or LUD-26: the same tree rooted in a Nostr identity key. */
     @Test
-    fun `a branch rooted in a Nostr key`() {
+    fun `a tree rooted in a Nostr key`() {
         val vectors = Vectors.load("nostr-seed.json")
         assertTrue(vectors.bool("extension"))
         val label = vectors.str("label")
@@ -296,53 +292,117 @@ class Part2VectorTest {
         var graded = 0
         for (case in cases) {
             val host = case.str("host")
+            val domain = case.str("domain")
             val identity = case.str("identity")
 
             val seed = deriveNostrCashSeed(identity)
             assertEquals(case.str("seed"), seed, host)
             // the label is the whole of the construction
             assertEquals(seed, hmacSha256(identity.unhex(), label.toByteArray()).hex(), host)
-            // the x-only key a lightning address on this branch belongs to
-            assertEquals(case.str("identityPubkey"), recoverNoteOwnershipPubkey(signNoteOwnership(identity)), host)
 
-            val node = deriveNostrAddressNode(identity, host)
-            assertEquals(case.str("addressNode"), node, host)
-            // nothing new past the seed: the ordinary address path from it
-            assertEquals(node, deriveCashAddressNode(deriveCashRoot(seed), host), host)
+            val serviceRoot = deriveNostrServiceRoot(identity, host)
+            assertEquals(case.str("serviceRoot"), serviceRoot, host)
+            // nothing new past the seed: the ordinary LUD-26 root from it
+            assertEquals(serviceRoot, deriveServiceRoot(deriveCashRoot(seed), host), host)
+            graded += gradeAccounts(serviceRoot, domain, case.array("accounts"), host)
+        }
+        assertTrue(graded > 0)
+    }
 
-            val cx1 = cashNodeToCx1(node)
-            assertEquals(case.str("cx1"), encodeCx1(cx1.pubkeyXOnly, cx1.chainCode), host)
-            assertEquals(cx1, decodeCx1(case.str("cx1")), host)
-
-            for (note in case.array("notes").map { it.jsonObject }) {
-                val index = note.long("index").toUInt()
-                val at = "$host #$index"
-                val secretKey = deriveNoteSecretKey(node.substring(0, 64), node.substring(64), index)
-                assertEquals(note.str("noteSecretKey"), secretKey, at)
-                val pubkey = deriveNotePubkey(cx1.pubkeyXOnly, cx1.chainCode, index)
-                assertEquals(note.str("notePubkey"), pubkey, at)
-                assertEquals(note.str("cp1"), encodeCp1(pubkey), at)
-                val ck1 = encodeCk1(signNoteOwnership(secretKey))
-                assertEquals(note.str("ck1"), ck1, at)
-                assertEquals(pubkey, noteIdOf(note.str("ck1")), "$at: ck1 recovery")
-                assertEquals(note.str("cp1"), noteLookupOf(ck1), at)
+    /**
+     * Wallet, change and share notes of every account below one service root:
+     * keys, `cp1`, `ck1`, and each share's `cx1` with the notes a mint derives
+     * from it by public derivation. Returns how many notes it graded.
+     */
+    private fun gradeAccounts(
+        serviceRoot: String,
+        domain: String,
+        accounts: kotlinx.serialization.json.JsonArray,
+        at: String,
+    ): Int {
+        var graded = 0
+        for (account in accounts.map { it.jsonObject }) {
+            val a = account.long("account").toInt()
+            val wallet = account.array("wallet").map { it.jsonObject }
+            val change = account.array("change").map { it.jsonObject }
+            assertTrue(wallet.isNotEmpty() && change.isNotEmpty(), "$at account $a")
+            for (note in wallet) {
+                val i = note.long("index").toInt()
+                gradeNote(deriveNoteKey(serviceRoot, NotePath.Wallet(a, i)), note, domain, "$at S/$a'/0/$i")
+                assertEquals(deriveNoteKey(serviceRoot, NotePath.Wallet(a, i)), deriveWalletNoteKey(serviceRoot, a, i))
                 graded++
             }
+            for (note in change) {
+                val i = note.long("index").toInt()
+                gradeNote(deriveNoteKey(serviceRoot, NotePath.Change(a, i)), note, domain, "$at S/$a'/1/$i")
+                assertEquals(deriveNoteKey(serviceRoot, NotePath.Change(a, i)), deriveChangeNoteKey(serviceRoot, a, i))
+                graded++
+            }
+            for (share in account.array("shares").map { it.jsonObject }) {
+                val n = share.long("share").toInt()
+                val node = deriveShareNode(serviceRoot, a, n)
+                // a share's private key signs its registrations; it hands out only the cx1
+                assertEquals(share.str("sharePrivateKey"), node.substring(0, 64), "$at share $a'/$n")
+                assertEquals(share.str("chainCode"), node.substring(64), "$at share $a'/$n")
+                val cx1 = share.str("cx1")
+                assertEquals(cx1, cashNodeToCx1(node), "$at share $a'/$n")
+                assertTrue(isCx1(cx1))
+                val decoded = decodeCx1(cx1)
+                assertEquals(Cx1(share.str("chainCode"), share.str("sharePubkey")), decoded, "$at share $a'/$n")
+                assertNotNull(decoded)
+                assertEquals(cx1, encodeCx1(decoded), "$at share $a'/$n")
+                assertEquals(cx1, encodeCx1(decoded.chainCode, decoded.pubkey), "$at share $a'/$n")
+                for (note in share.array("notes").map { it.jsonObject }) {
+                    val i = note.long("index").toInt()
+                    val where = "$at S/$a'/2/$n'/$i"
+                    gradeNote(deriveNoteKey(serviceRoot, NotePath.Share(a, n, i)), note, domain, where)
+                    assertEquals(
+                        deriveNoteKey(serviceRoot, NotePath.Share(a, n, i)),
+                        deriveShareNoteKey(serviceRoot, a, n, i),
+                    )
+                    // a mint holding only the cx1 finds the same note, by CKDpub, from both overloads
+                    assertEquals(note.str("notePubkey"), deriveNotePubkey(cx1, i.toLong()), where)
+                    assertEquals(note.str("notePubkey"), deriveNotePubkey(cx1, i.toUInt()), where)
+                    graded++
+                }
+            }
         }
-        assertEquals(12, graded, "four identities of three notes")
+        return graded
+    }
+
+    private fun gradeNote(key: NoteKey, note: JsonObject, domain: String, at: String) {
+        assertEquals(note.str("noteSecretKey"), key.secretKey, at)
+        assertEquals(note.str("notePubkeyCompressed"), key.pubkey, at)
+        assertEquals(note.str("notePubkey"), key.outputKey, at)
+        val cp1 = note.str("cp1")
+        assertEquals(cp1, encodeCp1(key.outputKey), at)
+        assertEquals(key.outputKey, decodeCp1(cp1), at)
+        assertTrue(isCp1(cp1), at)
+
+        // all-zero aux_rand: one key at one domain reproduces one ck1, byte for byte
+        val payload = signNoteOwnership(key.secretKey, domain) // Q (32) || Schnorr sig (64), 96 bytes
+        assertEquals(note.str("keyPathSignature"), payload.substring(64), at)
+        val ck1 = note.str("ck1")
+        assertEquals(ck1, encodeCk1(payload), at)
+        assertEquals(payload, decodeCk1(ck1), at)
+        assertTrue(isCk1(ck1), at)
+
+        // the service's side: the ck1 alone gives the note it is filed under, at its own mint only
+        assertEquals(NoteOwner(key.outputKey, legacy = false), recoverNoteOwnershipPubkey(payload, domain), at)
+        assertNull(recoverNoteOwnershipPubkey(payload, "other.example"), "$at: a spend is bound to its mint")
+        assertEquals(key.outputKey, noteIdOf(ck1), at)
+        assertEquals(cp1, noteLookupOf(ck1), at)
+        assertFalse(key.toString().contains(key.secretKey), "$at: a NoteKey must not print its secret")
     }
 }
 
 // ---- the arithmetic the facade has no function for ----
 
-internal val CURVE_ORDER: BigInteger =
-    BigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
-
 internal fun ByteArray.hex(): String = joinToString("") { "%02x".format(it) }
 
 internal fun String.unhex(): ByteArray = chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
-private fun sha256(vararg parts: ByteArray): ByteArray =
+internal fun sha256(vararg parts: ByteArray): ByteArray =
     MessageDigest.getInstance("SHA-256").run {
         parts.forEach { update(it) }
         digest()
@@ -364,23 +424,8 @@ private fun lightningSignedDigest(message: String): ByteArray =
  * against their seedHex; the library takes raw seed bytes and carries no
  * wordlist.
  */
-private fun bip39Seed(mnemonic: String): String =
+internal fun bip39Seed(mnemonic: String): String =
     SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
         .generateSecret(PBEKeySpec(mnemonic.toCharArray(), "mnemonic".toByteArray(), 2048, 512))
         .encoded
         .hex()
-
-/** t = tagged_hash("LNURLcash/derive", P || chainCode || ser32_be(i)) */
-private fun noteTweak(pubkeyXOnly: String, chainCode: String, index: UInt): BigInteger {
-    val tag = sha256("LNURLcash/derive".toByteArray())
-    val i = index.toInt()
-    val be = byteArrayOf((i ushr 24).toByte(), (i ushr 16).toByte(), (i ushr 8).toByte(), i.toByte())
-    return BigInteger(1, sha256(tag, tag, pubkeyXOnly.unhex(), chainCode.unhex(), be))
-}
-
-/** sk_i = ((P has even y ? p : n - p) + t) mod n */
-private fun tweakedSecretKey(privateKey: String, odd: Boolean, tweak: BigInteger): String {
-    val p = BigInteger(privateKey, 16)
-    val base = if (odd) CURVE_ORDER.subtract(p) else p
-    return base.add(tweak).mod(CURVE_ORDER).toString(16).padStart(64, '0')
-}

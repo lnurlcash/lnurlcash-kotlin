@@ -30,7 +30,7 @@ class PolicyTest {
 
     private val part2: JsonObject by lazy { Vectors.load("part2.json") }
     private val cp1s: List<String> by lazy {
-        part2.array("branches")[0].jsonObject.array("notes").take(2).map { it.jsonObject.str("cp1") }
+        part2.array("branches")[0].jsonObject.array("accounts")[0].jsonObject.array("wallet").take(2).map { it.jsonObject.str("cp1") }
     }
     private val mintPubkey: String by lazy { part2.obj("mint").str("mintPubkey") }
 
